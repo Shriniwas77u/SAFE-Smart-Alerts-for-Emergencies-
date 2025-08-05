@@ -1,0 +1,53 @@
+/* Add these to your custom.css */
+
+/* Hero section background with overlay */
+.hero-section {
+  position: relative;
+  background: linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)), url('https://images.unsplash.com/photo-1534452203293-494d7ddbf7e0?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1470&q=80');
+  background-size: cover;
+  background-position: center;
+  color: white;
+  padding: 100px 0;
+  min-height: 70vh;
+  display: flex;
+  align-items: center;
+}
+
+/* Emergency button */
+.btn-emergency {
+  background-color: #dc3545;
+  border-color: #dc3545;
+}
+
+.btn-emergency:hover {
+  background-color: #c82333;
+  border-color: #bd2130;
+}
+
+/* Card hover effect enhancement */
+.feature-card {
+  transition: transform 0.3s ease;
+}
+
+.feature-card:hover {
+  transform: translateY(-10px);
+}
+
+/* Testimonial carousel controls */
+.carousel-control-prev-icon,
+.carousel-control-next-icon {
+  background-color: rgba(0, 0, 0, 0.5);
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  background-size: 50%;
+}
+
+/* Footer links */
+footer a {
+  transition: color 0.3s ease;
+}
+
+footer a:hover {
+  color: #dc3545 !important;
+}

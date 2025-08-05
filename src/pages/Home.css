@@ -1,0 +1,50 @@
+/* Hero Section Styles */
+.hero-section {
+  background: linear-gradient(135deg, #0066cc 0%, #00cc66 100%);
+  background-size: cover;
+  background-position: center;
+  color: white;
+  padding: 100px 0;
+  min-height: 70vh;
+  display: flex;
+  align-items: center;
+}
+
+/* Emergency Button */
+.btn-emergency {
+  background-color: #dc3545;
+  border-color: #dc3545;
+}
+
+.btn-emergency:hover {
+  background-color: #c82333;
+  border-color: #bd2130;
+}
+
+/* Feature Cards */
+.feature-card {
+  transition: transform 0.3s ease;
+}
+
+.feature-card:hover {
+  transform: translateY(-10px);
+}
+
+/* Testimonial Carousel */
+.carousel-control-prev-icon,
+.carousel-control-next-icon {
+  background-color: rgba(0, 0, 0, 0.5);
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  background-size: 50%;
+}
+
+/* Footer */
+footer a {
+  transition: color 0.3s ease;
+}
+
+footer a:hover {
+  color: #dc3545 !important;
+}
