@@ -1,0 +1,2 @@
+C:\Users\l\OneDrive\Desktop\SAFE\SAFE\safe.client\obj\Debug\safe.client.esproj.CoreCompileInputs.cache
+C:\S9+\SAFE\SAFE\safe.client\obj\Debug\safe.client.esproj.CoreCompileInputs.cache

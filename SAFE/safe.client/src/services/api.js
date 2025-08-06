@@ -1,0 +1,112 @@
+import axios from 'axios';
+
+// Create axios instance with default configuration
+const api = axios.create({
+    baseURL: '/api', // This will proxy through the backend
+    headers: {
+        'Content-Type': 'application/json',
+    },
+});
+
+// Add token to requests if available
+api.interceptors.request.use((config) => {
+    const token = localStorage.getItem('token');
+    if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+});
+
+// Handle authentication errors
+api.interceptors.response.use(
+    (response) => response,
+    (error) => {
+        if (error.response?.status === 401) {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            window.location.href = '/login';
+        }
+        return Promise.reject(error);
+    }
+);
+
+// Authentication API
+export const authAPI = {
+    login: async (email, password) => {
+        const response = await api.post('/auth/login', { email, password });
+        return response.data;
+    },
+    
+    register: async (userData) => {
+        const response = await api.post('/auth/register', userData);
+        return response.data;
+    },
+};
+
+// Alerts API
+export const alertsAPI = {
+    getAll: async () => {
+        const response = await api.get('/alerts');
+        return response.data;
+    },
+    
+    getActive: async () => {
+        const response = await api.get('/alerts/active');
+        return response.data;
+    },
+    
+    getById: async (id) => {
+        const response = await api.get(`/alerts/${id}`);
+        return response.data;
+    },
+    
+    create: async (alertData) => {
+        const response = await api.post('/alerts', alertData);
+        return response.data;
+    },
+    
+    update: async (id, alertData) => {
+        const response = await api.put(`/alerts/${id}`, alertData);
+        return response.data;
+    },
+    
+    delete: async (id) => {
+        const response = await api.delete(`/alerts/${id}`);
+        return response.data;
+    },
+};
+
+// Help Requests API
+export const helpRequestsAPI = {
+    getAll: async () => {
+        const response = await api.get('/helprequests');
+        return response.data;
+    },
+    
+    getMy: async () => {
+        const response = await api.get('/helprequests/my-requests');
+        return response.data;
+    },
+    
+    getById: async (id) => {
+        const response = await api.get(`/helprequests/${id}`);
+        return response.data;
+    },
+    
+    create: async (requestData) => {
+        const response = await api.post('/helprequests', requestData);
+        return response.data;
+    },
+    
+    assign: async (id, responderId) => {
+        const response = await api.put(`/helprequests/${id}/assign`, { responderId });
+        return response.data;
+    },
+    
+    updateStatus: async (id, status) => {
+        const response = await api.put(`/helprequests/${id}/status`, { status });
+        return response.data;
+    },
+};
+
+export default api;

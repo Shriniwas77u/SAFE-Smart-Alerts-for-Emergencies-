@@ -1,0 +1,15 @@
+{
+  "ExpandedNodes": [
+    "",
+    "\\SAFE",
+    "\\SAFE\\safe.client",
+    "\\SAFE\\safe.client\\public",
+    "\\SAFE\\safe.client\\src\\components",
+    "\\SAFE\\safe.client\\src\\contexts",
+    "\\SAFE\\safe.client\\src\\pages",
+    "\\SAFE\\SAFE.Server",
+    "\\SAFE\\SAFE.Server\\Models"
+  ],
+  "SelectedNode": "\\SAFE\\SAFE.Server\\Models\\User.cs",
+  "PreviewInSolutionExplorer": false
+}

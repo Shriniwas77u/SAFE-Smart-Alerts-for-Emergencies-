@@ -1,0 +1,180 @@
+import { Container, Row, Col, Card, Alert, Badge, Button, Table } from 'react-bootstrap';
+
+function Dashboard() {
+    // Mock data for demonstration
+    const stats = {
+        activeAlerts: 3,
+        helpRequests: 8,
+        totalDonations: 15750,
+        shelters: 12
+    };
+
+    const recentAlerts = [
+        { id: 1, title: "Flood Warning", severity: "High", area: "Downtown", time: "2 hours ago" },
+        { id: 2, title: "Power Outage", severity: "Medium", area: "North District", time: "4 hours ago" },
+        { id: 3, title: "Road Closure", severity: "Low", area: "Highway 101", time: "6 hours ago" }
+    ];
+
+    const pendingRequests = [
+        { id: 1, type: "Medical", requester: "John D.", location: "Main St", status: "Urgent" },
+        { id: 2, type: "Shelter", requester: "Sarah M.", location: "Park Ave", status: "Pending" },
+        { id: 3, type: "Food", requester: "Family of 4", location: "Oak St", status: "Assigned" }
+    ];
+
+    return (
+        <Container>
+            <Row className="mb-4">
+                <Col>
+                    <h1 className="text-danger">Emergency Dashboard</h1>
+                    <p className="text-muted">Real-time emergency management overview</p>
+                </Col>
+            </Row>
+            
+            {/* Statistics Cards */}
+            <Row className="mb-4">
+                <Col md={3} className="mb-3">
+                    <Card className="text-center h-100 shadow-sm border-danger">
+                        <Card.Body>
+                            <div className="text-danger mb-2">
+                                <i className="bi bi-exclamation-triangle-fill" style={{ fontSize: '2rem' }}></i>
+                            </div>
+                            <Card.Title className="h2 text-danger">{stats.activeAlerts}</Card.Title>
+                            <Card.Text className="text-muted">Active Alerts</Card.Text>
+                        </Card.Body>
+                    </Card>
+                </Col>
+                
+                <Col md={3} className="mb-3">
+                    <Card className="text-center h-100 shadow-sm border-primary">
+                        <Card.Body>
+                            <div className="text-primary mb-2">
+                                <i className="bi bi-hand-thumbs-up-fill" style={{ fontSize: '2rem' }}></i>
+                            </div>
+                            <Card.Title className="h2 text-primary">{stats.helpRequests}</Card.Title>
+                            <Card.Text className="text-muted">Help Requests</Card.Text>
+                        </Card.Body>
+                    </Card>
+                </Col>
+                
+                <Col md={3} className="mb-3">
+                    <Card className="text-center h-100 shadow-sm border-success">
+                        <Card.Body>
+                            <div className="text-success mb-2">
+                                <i className="bi bi-currency-dollar" style={{ fontSize: '2rem' }}></i>
+                            </div>
+                            <Card.Title className="h2 text-success">${stats.totalDonations.toLocaleString()}</Card.Title>
+                            <Card.Text className="text-muted">Total Donations</Card.Text>
+                        </Card.Body>
+                    </Card>
+                </Col>
+                
+                <Col md={3} className="mb-3">
+                    <Card className="text-center h-100 shadow-sm border-warning">
+                        <Card.Body>
+                            <div className="text-warning mb-2">
+                                <i className="bi bi-house-fill" style={{ fontSize: '2rem' }}></i>
+                            </div>
+                            <Card.Title className="h2 text-warning">{stats.shelters}</Card.Title>
+                            <Card.Text className="text-muted">Active Shelters</Card.Text>
+                        </Card.Body>
+                    </Card>
+                </Col>
+            </Row>
+            
+            <Row>
+                {/* Recent Alerts */}
+                <Col lg={6} className="mb-4">
+                    <Card className="shadow-sm">
+                        <Card.Header className="bg-danger text-white">
+                            <h5 className="mb-0">Recent Alerts</h5>
+                        </Card.Header>
+                        <Card.Body>
+                            {recentAlerts.map(alert => (
+                                <Alert key={alert.id} variant={alert.severity === 'High' ? 'danger' : alert.severity === 'Medium' ? 'warning' : 'info'} className="mb-2">
+                                    <div className="d-flex justify-content-between align-items-start">
+                                        <div>
+                                            <strong>{alert.title}</strong>
+                                            <br />
+                                            <small>Area: {alert.area}</small>
+                                        </div>
+                                        <div className="text-end">
+                                            <Badge bg={alert.severity === 'High' ? 'danger' : alert.severity === 'Medium' ? 'warning' : 'secondary'}>
+                                                {alert.severity}
+                                            </Badge>
+                                            <br />
+                                            <small className="text-muted">{alert.time}</small>
+                                        </div>
+                                    </div>
+                                </Alert>
+                            ))}
+                            <div className="text-center">
+                                <Button variant="outline-danger" size="sm">View All Alerts</Button>
+                            </div>
+                        </Card.Body>
+                    </Card>
+                </Col>
+                
+                {/* Pending Help Requests */}
+                <Col lg={6} className="mb-4">
+                    <Card className="shadow-sm">
+                        <Card.Header className="bg-primary text-white">
+                            <h5 className="mb-0">Pending Help Requests</h5>
+                        </Card.Header>
+                        <Card.Body>
+                            <Table responsive size="sm">
+                                <thead>
+                                    <tr>
+                                        <th>Type</th>
+                                        <th>Requester</th>
+                                        <th>Location</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {pendingRequests.map(request => (
+                                        <tr key={request.id}>
+                                            <td>{request.type}</td>
+                                            <td>{request.requester}</td>
+                                            <td>{request.location}</td>
+                                            <td>
+                                                <Badge bg={request.status === 'Urgent' ? 'danger' : request.status === 'Pending' ? 'warning' : 'success'}>
+                                                    {request.status}
+                                                </Badge>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </Table>
+                            <div className="text-center">
+                                <Button variant="outline-primary" size="sm">View All Requests</Button>
+                            </div>
+                        </Card.Body>
+                    </Card>
+                </Col>
+            </Row>
+            
+            {/* Quick Actions */}
+            <Row>
+                <Col>
+                    <Card className="shadow-sm">
+                        <Card.Header>
+                            <h5 className="mb-0">Quick Actions</h5>
+                        </Card.Header>
+                        <Card.Body>
+                            <div className="d-flex gap-2 flex-wrap">
+                                <Button variant="danger">Create Alert</Button>
+                                <Button variant="primary">View Help Requests</Button>
+                                <Button variant="success">Manage Donations</Button>
+                                <Button variant="warning">Update Shelters</Button>
+                                <Button variant="info">Generate Report</Button>
+                                <Button variant="secondary">System Settings</Button>
+                            </div>
+                        </Card.Body>
+                    </Card>
+                </Col>
+            </Row>
+        </Container>
+    );
+}
+
+export default Dashboard;

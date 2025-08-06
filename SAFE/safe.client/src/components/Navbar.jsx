@@ -1,0 +1,75 @@
+import { Navbar as BSNavbar, Nav, Container, NavDropdown } from 'react-bootstrap';
+import { LinkContainer } from 'react-router-bootstrap';
+import { useAuth } from '../contexts/AuthContext';
+import { useNavigate } from 'react-router-dom';
+
+function Navbar() {
+    const { user, isAuthenticated, logout } = useAuth();
+    const navigate = useNavigate();
+
+    const handleLogout = () => {
+        logout();
+        navigate('/');
+    };
+
+    return (
+        <BSNavbar bg="danger" variant="dark" expand="lg" sticky="top">
+            <Container>
+                <LinkContainer to="/">
+                    <BSNavbar.Brand>
+                        <i className="bi bi-shield-exclamation me-2"></i>
+                        SAFE
+                    </BSNavbar.Brand>
+                </LinkContainer>
+                
+                <BSNavbar.Toggle aria-controls="basic-navbar-nav" />
+                <BSNavbar.Collapse id="basic-navbar-nav">
+                    <Nav className="me-auto">
+                        <LinkContainer to="/">
+                            <Nav.Link>Home</Nav.Link>
+                        </LinkContainer>
+                        <LinkContainer to="/alerts">
+                            <Nav.Link>Alerts</Nav.Link>
+                        </LinkContainer>
+                        {isAuthenticated() && (
+                            <>
+                                <LinkContainer to="/help-requests">
+                                    <Nav.Link>Help Requests</Nav.Link>
+                                </LinkContainer>
+                                <LinkContainer to="/dashboard">
+                                    <Nav.Link>Dashboard</Nav.Link>
+                                </LinkContainer>
+                            </>
+                        )}
+                    </Nav>
+                    
+                    <Nav>
+                        {isAuthenticated() ? (
+                            <NavDropdown title={`${user?.firstName} ${user?.lastName}`} id="user-nav-dropdown">
+                                <NavDropdown.Item>
+                                    <small className="text-muted">Role: {user?.role}</small>
+                                </NavDropdown.Item>
+                                <NavDropdown.Divider />
+                                <NavDropdown.Item onClick={handleLogout}>
+                                    <i className="bi bi-box-arrow-right me-2"></i>
+                                    Logout
+                                </NavDropdown.Item>
+                            </NavDropdown>
+                        ) : (
+                            <>
+                                <LinkContainer to="/login">
+                                    <Nav.Link>Login</Nav.Link>
+                                </LinkContainer>
+                                <LinkContainer to="/register">
+                                    <Nav.Link>Register</Nav.Link>
+                                </LinkContainer>
+                            </>
+                        )}
+                    </Nav>
+                </BSNavbar.Collapse>
+            </Container>
+        </BSNavbar>
+    );
+}
+
+export default Navbar;
