@@ -1,0 +1,268 @@
+﻿import { useEffect, useState } from 'react';
+import { Container, Row, Col, Card, Badge, Button, Table, Spinner, Alert as RBAlert, Modal, Form } from 'react-bootstrap';
+import api from '../services/api';
+
+function AdminDashboard() {
+    const [summary, setSummary] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+    const [users, setUsers] = useState([]);
+    const [showUsers, setShowUsers] = useState(false);
+    const [selectedUser, setSelectedUser] = useState(null);
+    const [showUserModal, setShowUserModal] = useState(false);
+    const [userEdit, setUserEdit] = useState(null);
+    const [userEditError, setUserEditError] = useState('');
+    const [userEditSuccess, setUserEditSuccess] = useState('');
+
+    useEffect(() => {
+        fetchSummary();
+    }, []);
+
+    const fetchSummary = async () => {
+        setLoading(true);
+        setError(null);
+        try {
+            const res = await api.get('/admin/dashboard-summary');
+            setSummary(res.data);
+        } catch (err) {
+            setError('Failed to load dashboard data.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const fetchUsers = async () => {
+        setShowUsers(true);
+        try {
+            const res = await api.get('/admin/users');
+            setUsers(res.data);
+        } catch {
+            setError('Failed to load users.');
+        }
+    };
+
+    const handleEditUser = (user) => {
+        setUserEdit({ ...user });
+        setShowUserModal(true);
+        setUserEditError('');
+        setUserEditSuccess('');
+    };
+
+    const handleUserEditChange = (e) => {
+        setUserEdit({ ...userEdit, [e.target.name]: e.target.value });
+    };
+
+    const handleSaveUser = async () => {
+        setUserEditError('');
+        setUserEditSuccess('');
+        try {
+            await api.put(`/admin/users/${userEdit.userId}`, userEdit);
+            setUserEditSuccess('User updated successfully.');
+            fetchUsers();
+        } catch {
+            setUserEditError('Failed to update user.');
+        }
+    };
+
+    if (loading) return <div className="text-center my-5"><Spinner animation="border" /></div>;
+    if (error) return <RBAlert variant="danger" className="my-5 text-center">{error}</RBAlert>;
+    if (!summary) return null;
+
+    return (
+        <Container>
+            <Row className="mb-4">
+                <Col>
+                    <h1 className="text-danger">Admin Dashboard</h1>
+                    <p className="text-muted">System overview and recent activity</p>
+                </Col>
+            </Row>
+            <Row className="mb-4">
+                <Col md={3} className="mb-3">
+                    <Card className="text-center h-100 shadow-sm border-danger">
+                        <Card.Body>
+                            <div className="text-danger mb-2">
+                                <i className="bi bi-people-fill" style={{ fontSize: '2rem' }}></i>
+                            </div>
+                            <Card.Title className="h2 text-danger">{summary?.userCount}</Card.Title>
+                            <Card.Text className="text-muted">Users</Card.Text>
+                            <Button variant="outline-danger" size="sm" onClick={fetchUsers} className="mt-2">View Users</Button>
+                        </Card.Body>
+                    </Card>
+                </Col>
+                <Col md={3} className="mb-3">
+                    <Card className="text-center h-100 shadow-sm border-warning">
+                        <Card.Body>
+                            <div className="text-warning mb-2">
+                                <i className="bi bi-exclamation-triangle-fill" style={{ fontSize: '2rem' }}></i>
+                            </div>
+                            <Card.Title className="h2 text-warning">{summary?.alertCount}</Card.Title>
+                            <Card.Text className="text-muted">Alerts</Card.Text>
+                        </Card.Body>
+                    </Card>
+                </Col>
+                <Col md={3} className="mb-3">
+                    <Card className="text-center h-100 shadow-sm border-primary">
+                        <Card.Body>
+                            <div className="text-primary mb-2">
+                                <i className="bi bi-hand-thumbs-up-fill" style={{ fontSize: '2rem' }}></i>
+                            </div>
+                            <Card.Title className="h2 text-primary">{summary?.helpRequestCount}</Card.Title>
+                            <Card.Text className="text-muted">Help Requests</Card.Text>
+                        </Card.Body>
+                    </Card>
+                </Col>
+                <Col md={3} className="mb-3">
+                    <Card className="text-center h-100 shadow-sm border-success">
+                        <Card.Body>
+                            <div className="text-success mb-2">
+                                <i className="bi bi-flag-fill" style={{ fontSize: '2rem' }}></i>
+                            </div>
+                            <Card.Title className="h2 text-success">{summary?.incidentCount}</Card.Title>
+                            <Card.Text className="text-muted">Incidents</Card.Text>
+                        </Card.Body>
+                    </Card>
+                </Col>
+            </Row>
+            <Row>
+                <Col lg={4} className="mb-4">
+                    <Card className="shadow-sm">
+                        <Card.Header className="bg-warning text-white">
+                            <h5 className="mb-0">Recent Alerts</h5>
+                        </Card.Header>
+                        <Card.Body>
+                            {summary?.recentAlerts?.length === 0 && <div className="text-muted">No recent alerts.</div>}
+                            {summary?.recentAlerts?.map(alert => (
+                                <div key={alert.alertId} className="mb-2">
+                                    <strong>{alert.title}</strong>
+                                    <br />
+                                    <Badge bg={alert.status === 'Active' ? 'success' : 'secondary'}>{alert.status}</Badge>
+                                    <br />
+                                    <small className="text-muted">{new Date(alert.createdDate).toLocaleString()}</small>
+                                </div>
+                            ))}
+                        </Card.Body>
+                    </Card>
+                </Col>
+                <Col lg={4} className="mb-4">
+                    <Card className="shadow-sm">
+                        <Card.Header className="bg-primary text-white">
+                            <h5 className="mb-0">Recent Help Requests</h5>
+                        </Card.Header>
+                        <Card.Body>
+                            {summary?.recentHelpRequests?.length === 0 && <div className="text-muted">No recent help requests.</div>}
+                            {summary?.recentHelpRequests?.map(hr => (
+                                <div key={hr.helpRequestId} className="mb-2">
+                                    <strong>{hr.type}</strong>
+                                    <br />
+                                    <Badge bg={hr.status === 'Pending' ? 'warning' : hr.status === 'Assigned' ? 'info' : 'success'}>{hr.status}</Badge>
+                                    <br />
+                                    <small className="text-muted">{new Date(hr.createdDate).toLocaleString()}</small>
+                                </div>
+                            ))}
+                        </Card.Body>
+                    </Card>
+                </Col>
+                <Col lg={4} className="mb-4">
+                    <Card className="shadow-sm">
+                        <Card.Header className="bg-success text-white">
+                            <h5 className="mb-0">Recent Incidents</h5>
+                        </Card.Header>
+                        <Card.Body>
+                            {summary?.recentIncidents?.length === 0 && <div className="text-muted">No recent incidents.</div>}
+                            {summary?.recentIncidents?.map(inc => (
+                                <div key={inc.incidentId} className="mb-2">
+                                    <strong>{inc.title}</strong>
+                                    <br />
+                                    <Badge bg={inc.status === 'Reported' ? 'danger' : inc.status === 'In Progress' ? 'warning' : 'success'}>{inc.status}</Badge>
+                                    <br />
+                                    <small className="text-muted">{new Date(inc.createdDate).toLocaleString()}</small>
+                                </div>
+                            ))}
+                        </Card.Body>
+                    </Card>
+                </Col>
+            </Row>
+            {/* User Management Modal */}
+            <Modal show={showUsers} onHide={() => setShowUsers(false)} size="lg">
+                <Modal.Header closeButton>
+                    <Modal.Title>All Users</Modal.Title>
+                </Modal.Header>
+                <Modal.Body>
+                    <Table responsive hover>
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Name</th>
+                                <th>Email</th>
+                                <th>Role</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {users.map(user => (
+                                <tr key={user.userId}>
+                                    <td>{user.userId}</td>
+                                    <td>{user.firstName} {user.lastName}</td>
+                                    <td>{user.email}</td>
+                                    <td>{user.role}</td>
+                                    <td>{user.isActive ? 'Active' : 'Inactive'}</td>
+                                    <td>
+                                        <Button size="sm" variant="outline-primary" onClick={() => handleEditUser(user)}>Edit</Button>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </Table>
+                </Modal.Body>
+            </Modal>
+            {/* Edit User Modal */}
+            <Modal show={showUserModal} onHide={() => setShowUserModal(false)}>
+                <Modal.Header closeButton>
+                    <Modal.Title>Edit User</Modal.Title>
+                </Modal.Header>
+                <Modal.Body>
+                    {userEdit && (
+                        <Form>
+                            <Form.Group className="mb-2">
+                                <Form.Label>First Name</Form.Label>
+                                <Form.Control name="firstName" value={userEdit.firstName} onChange={handleUserEditChange} />
+                            </Form.Group>
+                            <Form.Group className="mb-2">
+                                <Form.Label>Last Name</Form.Label>
+                                <Form.Control name="lastName" value={userEdit.lastName} onChange={handleUserEditChange} />
+                            </Form.Group>
+                            <Form.Group className="mb-2">
+                                <Form.Label>Email</Form.Label>
+                                <Form.Control name="email" value={userEdit.email} onChange={handleUserEditChange} />
+                            </Form.Group>
+                            <Form.Group className="mb-2">
+                                <Form.Label>Role</Form.Label>
+                                <Form.Select name="role" value={userEdit.role} onChange={handleUserEditChange}>
+                                    <option value="User">User</option>
+                                    <option value="Admin">Admin</option>
+                                    <option value="Responder">Responder</option>
+                                </Form.Select>
+                            </Form.Group>
+                            <Form.Group className="mb-2">
+                                <Form.Label>Status</Form.Label>
+                                <Form.Select name="isActive" value={userEdit.isActive ? 'true' : 'false'} onChange={e => setUserEdit({ ...userEdit, isActive: e.target.value === 'true' })}>
+                                    <option value="true">Active</option>
+                                    <option value="false">Inactive</option>
+                                </Form.Select>
+                            </Form.Group>
+                            {userEditError && <RBAlert variant="danger">{userEditError}</RBAlert>}
+                            {userEditSuccess && <RBAlert variant="success">{userEditSuccess}</RBAlert>}
+                        </Form>
+                    )}
+                </Modal.Body>
+                <Modal.Footer>
+                    <Button variant="secondary" onClick={() => setShowUserModal(false)}>Close</Button>
+                    <Button variant="primary" onClick={handleSaveUser}>Save</Button>
+                </Modal.Footer>
+            </Modal>
+        </Container>
+    );
+}
+
+export default AdminDashboard;

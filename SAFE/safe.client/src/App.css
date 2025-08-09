@@ -3,6 +3,55 @@
     margin: 0 auto;
     padding: 2rem;
     text-align: left;
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+}
+
+.home-bg {
+    background: #fff;
+    min-height: 100vh;
+}
+
+.hero-section {
+    background: linear-gradient(120deg, #d32f2f 60%, #fff 100%);
+    min-height: 60vh;
+    position: relative;
+    padding-top: 4rem;
+    padding-bottom: 4rem;
+}
+
+.hero-section h1, .hero-section h2, .hero-section p {
+    color: #fff;
+    text-shadow: 0 2px 8px rgba(0,0,0,0.12);
+}
+
+.hero-section .btn-light {
+    background: #fff;
+    color: #d32f2f;
+    border: none;
+    font-weight: bold;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    transition: background 0.2s, color 0.2s;
+}
+.hero-section .btn-light:hover {
+    background: #d32f2f;
+    color: #fff;
+}
+
+.home-action-card {
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+.home-action-card:hover {
+    transform: translateY(-6px) scale(1.03);
+    box-shadow: 0 8px 32px rgba(211,47,47,0.12);
+}
+
+.card-title {
+    font-weight: 600;
+}
+
+.card-text {
+    color: #555;
 }
 
 /* Form specific styles */
@@ -12,10 +61,19 @@
 
 .login-form .text-center,
 .register-form .text-center {
+    text-align: -webkit-match-parent;
+    text-align: match-parent;
+    text-align: inherit;
     text-align: center !important;
 }
 
 th, td {
     padding-left: 1rem;
     padding-right: 1rem;
+}
+
+/* Print color adjust for compatibility */
+html {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
 }

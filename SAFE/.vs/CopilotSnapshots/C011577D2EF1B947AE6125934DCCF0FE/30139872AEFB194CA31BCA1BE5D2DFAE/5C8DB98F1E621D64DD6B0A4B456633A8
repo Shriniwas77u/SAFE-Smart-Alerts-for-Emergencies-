@@ -1,0 +1,40 @@
+﻿using System.ComponentModel.DataAnnotations;
+
+namespace SAFE.Server.Models
+{
+    public class Incident
+    {
+        public int IncidentId { get; set; }
+        
+        [Required]
+        public string Title { get; set; } = string.Empty;
+        
+        [Required]
+        public string Description { get; set; } = string.Empty;
+        
+        [Required]
+        public string IncidentType { get; set; } = string.Empty; // Fire, Flood, Accident, Medical, etc.
+        
+        [Required]
+        public string Status { get; set; } = "Reported"; // Reported, In Progress, Resolved
+        
+        public double? Latitude { get; set; }
+        
+        public double? Longitude { get; set; }
+        
+        public string Location { get; set; } = string.Empty;
+        
+        public int ReportedBy { get; set; }
+        
+        public DateTime CreatedDate { get; set; } = DateTime.UtcNow;
+        
+        public DateTime? ResolvedDate { get; set; }
+        
+        public string Priority { get; set; } = "Medium"; // Low, Medium, High
+        
+        public string Notes { get; set; } = string.Empty;
+        
+        // Navigation properties
+        public User Reporter { get; set; } = null!;
+    }
+}

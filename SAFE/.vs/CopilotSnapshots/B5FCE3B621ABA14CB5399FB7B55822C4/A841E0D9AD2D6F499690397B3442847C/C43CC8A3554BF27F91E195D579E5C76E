@@ -1,0 +1,264 @@
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
+using SAFE.Server.Data;
+using SAFE.Server.Models;
+using Microsoft.Extensions.Logging;
+
+namespace SAFE.Server.Controllers
+{
+    [ApiController]
+    [Route("api/[controller]")]
+    public class AlertsController : ControllerBase
+    {
+        private readonly SafeDbContext _context;
+        private readonly ILogger<AlertsController> _logger;
+
+        public AlertsController(SafeDbContext context, ILogger<AlertsController> logger)
+        {
+            _context = context;
+            _logger = logger;
+        }
+
+        [HttpGet]
+        public async Task<ActionResult<IEnumerable<AlertDto>>> GetAlerts()
+        {
+            var alerts = await _context.Alerts
+                .Include(a => a.Creator)
+                .OrderByDescending(a => a.CreatedDate)
+                .Select(a => new AlertDto
+                {
+                    AlertId = a.AlertId,
+                    Title = a.Title,
+                    Description = a.Description,
+                    AlertType = a.AlertType,
+                    Priority = a.Priority,
+                    Status = a.Status,
+                    CreatedDate = a.CreatedDate,
+                    ExpiryDate = a.ExpiryDate,
+                    GeoTargeting = a.GeoTargeting,
+                    AffectedPopulation = a.AffectedPopulation,
+                    CreatorName = $"{a.Creator.FirstName} {a.Creator.LastName}"
+                })
+                .ToListAsync();
+
+            return Ok(alerts);
+        }
+
+        [HttpGet("{id}")]
+        public async Task<ActionResult<AlertDto>> GetAlert(int id)
+        {
+            var alert = await _context.Alerts
+                .Include(a => a.Creator)
+                .FirstOrDefaultAsync(a => a.AlertId == id);
+
+            if (alert == null)
+            {
+                return NotFound();
+            }
+
+            var alertDto = new AlertDto
+            {
+                AlertId = alert.AlertId,
+                Title = alert.Title,
+                Description = alert.Description,
+                AlertType = alert.AlertType,
+                Priority = alert.Priority,
+                Status = alert.Status,
+                CreatedDate = alert.CreatedDate,
+                ExpiryDate = alert.ExpiryDate,
+                GeoTargeting = alert.GeoTargeting,
+                AffectedPopulation = alert.AffectedPopulation,
+                CreatorName = $"{alert.Creator.FirstName} {alert.Creator.LastName}"
+            };
+
+            return Ok(alertDto);
+        }
+
+        [HttpGet("active")]
+        public async Task<ActionResult<IEnumerable<AlertDto>>> GetActiveAlerts()
+        {
+            var alerts = await _context.Alerts
+                .Include(a => a.Creator)
+                .Where(a => a.Status == "Active" && (a.ExpiryDate == null || a.ExpiryDate > DateTime.UtcNow))
+                .OrderByDescending(a => a.CreatedDate)
+                .Select(a => new AlertDto
+                {
+                    AlertId = a.AlertId,
+                    Title = a.Title,
+                    Description = a.Description,
+                    AlertType = a.AlertType,
+                    Priority = a.Priority,
+                    Status = a.Status,
+                    CreatedDate = a.CreatedDate,
+                    ExpiryDate = a.ExpiryDate,
+                    GeoTargeting = a.GeoTargeting,
+                    AffectedPopulation = a.AffectedPopulation,
+                    CreatorName = $"{a.Creator.FirstName} {a.Creator.LastName}"
+                })
+                .ToListAsync();
+
+            return Ok(alerts);
+        }
+
+        [HttpPost]
+        [Authorize]
+        public async Task<ActionResult<AlertDto>> CreateAlert(CreateAlertRequest request)
+        {
+            _logger.LogInformation("POST /api/alerts called");
+            try
+            {
+                var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
+
+                var alert = new Alert
+                {
+                    Title = request.Title,
+                    Description = request.Description,
+                    AlertType = request.AlertType,
+                    Priority = request.Priority,
+                    Status = "Active",
+                    CreatedBy = userId,
+                    CreatedDate = DateTime.UtcNow,
+                    ExpiryDate = request.ExpiryDate,
+                    GeoTargeting = request.GeoTargeting,
+                    AffectedPopulation = request.AffectedPopulation
+                };
+
+                _context.Alerts.Add(alert);
+                await _context.SaveChangesAsync();
+
+                _logger.LogInformation($"Alert created with ID: {alert.AlertId}");
+
+                return CreatedAtAction(nameof(GetAlert), new { id = alert.AlertId }, new AlertDto
+                {
+                    AlertId = alert.AlertId,
+                    Title = alert.Title,
+                    Description = alert.Description,
+                    AlertType = alert.AlertType,
+                    Priority = alert.Priority,
+                    Status = alert.Status,
+                    CreatedDate = alert.CreatedDate,
+                    ExpiryDate = alert.ExpiryDate,
+                    GeoTargeting = alert.GeoTargeting,
+                    AffectedPopulation = alert.AffectedPopulation
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error creating alert");
+                return StatusCode(500, "An error occurred while creating the alert.");
+            }
+        }
+
+        [HttpPut("{id}")]
+        [Authorize]
+        public async Task<IActionResult> UpdateAlert(int id, UpdateAlertRequest request)
+        {
+            var alert = await _context.Alerts.FindAsync(id);
+            if (alert == null)
+            {
+                return NotFound();
+            }
+
+            alert.Title = request.Title;
+            alert.Description = request.Description;
+            alert.AlertType = request.AlertType;
+            alert.Priority = request.Priority;
+            alert.Status = request.Status;
+            alert.ExpiryDate = request.ExpiryDate;
+            alert.GeoTargeting = request.GeoTargeting;
+            alert.AffectedPopulation = request.AffectedPopulation;
+
+            await _context.SaveChangesAsync();
+
+            return NoContent();
+        }
+
+        [HttpDelete("{id}")]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> DeleteAlert(int id)
+        {
+            var alert = await _context.Alerts.FindAsync(id);
+            if (alert == null)
+            {
+                return NotFound();
+            }
+
+            _context.Alerts.Remove(alert);
+            await _context.SaveChangesAsync();
+
+            return NoContent();
+        }
+
+        [HttpGet("my-alerts")]
+        [Authorize]
+        public async Task<ActionResult<IEnumerable<AlertDto>>> GetMyAlerts()
+        {
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+            if (userIdClaim == null || !int.TryParse(userIdClaim.Value, out var userId) || userId == 0)
+            {
+                return BadRequest("Could not determine user id from token.");
+            }
+            var alerts = await _context.Alerts
+                .Include(a => a.Creator)
+                .Where(a => a.CreatedBy == userId)
+                .OrderByDescending(a => a.CreatedDate)
+                .Select(a => new AlertDto
+                {
+                    AlertId = a.AlertId,
+                    Title = a.Title,
+                    Description = a.Description,
+                    AlertType = a.AlertType,
+                    Priority = a.Priority,
+                    Status = a.Status,
+                    CreatedDate = a.CreatedDate,
+                    ExpiryDate = a.ExpiryDate,
+                    GeoTargeting = a.GeoTargeting,
+                    AffectedPopulation = a.AffectedPopulation,
+                    CreatorName = $"{a.Creator.FirstName} {a.Creator.LastName}"
+                })
+                .ToListAsync();
+
+            return Ok(alerts);
+        }
+    }
+
+    public class AlertDto
+    {
+        public int AlertId { get; set; }
+        public string Title { get; set; } = string.Empty;
+        public string Description { get; set; } = string.Empty;
+        public string AlertType { get; set; } = string.Empty;
+        public string Priority { get; set; } = string.Empty;
+        public string Status { get; set; } = string.Empty;
+        public DateTime CreatedDate { get; set; }
+        public DateTime? ExpiryDate { get; set; }
+        public string GeoTargeting { get; set; } = string.Empty;
+        public int AffectedPopulation { get; set; }
+        public string CreatorName { get; set; } = string.Empty;
+    }
+
+    public class CreateAlertRequest
+    {
+        public string Title { get; set; } = string.Empty;
+        public string Description { get; set; } = string.Empty;
+        public string AlertType { get; set; } = string.Empty;
+        public string Priority { get; set; } = "Medium";
+        public DateTime? ExpiryDate { get; set; }
+        public string GeoTargeting { get; set; } = string.Empty;
+        public int AffectedPopulation { get; set; }
+    }
+
+    public class UpdateAlertRequest
+    {
+        public string Title { get; set; } = string.Empty;
+        public string Description { get; set; } = string.Empty;
+        public string AlertType { get; set; } = string.Empty;
+        public string Priority { get; set; } = string.Empty;
+        public string Status { get; set; } = string.Empty;
+        public DateTime? ExpiryDate { get; set; }
+        public string GeoTargeting { get; set; } = string.Empty;
+        public int AffectedPopulation { get; set; }
+    }
+}

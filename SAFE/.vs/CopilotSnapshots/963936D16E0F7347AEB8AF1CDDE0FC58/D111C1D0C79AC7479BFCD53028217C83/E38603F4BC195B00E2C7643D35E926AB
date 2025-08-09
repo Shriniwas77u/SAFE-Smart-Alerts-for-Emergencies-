@@ -1,0 +1,173 @@
+﻿import { useState, useEffect } from 'react';
+import { Container, Row, Col, Card, Button, Alert, Badge, Form, Modal, Spinner } from 'react-bootstrap';
+import { alertsAPI } from '../services/api';
+
+function Alerts() {
+    const [showViewModal, setShowViewModal] = useState(false);
+    const [selectedAlert, setSelectedAlert] = useState(null);
+    const [alerts, setAlerts] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState('');
+    
+    useEffect(() => {
+        fetchAlerts();
+    }, []);
+
+    const fetchAlerts = async () => {
+        setLoading(true);
+        setError('');
+        try {
+            const data = await alertsAPI.getMine(); // Only fetch alerts created by the current user
+            setAlerts(data);
+        } catch (err) {
+            setError('Failed to fetch alerts.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleViewAlert = (alert) => {
+        setSelectedAlert(alert);
+        setShowViewModal(true);
+    };
+
+    const getSeverityVariant = (priority) => {
+        switch (priority) {
+            case 'High': return 'danger';
+            case 'Medium': return 'warning';
+            case 'Low': return 'info';
+            default: return 'secondary';
+        }
+    };
+
+    const getStatusVariant = (status) => {
+        return status === 'Active' ? 'success' : 'secondary';
+    };
+
+    // Add assignedTeamName and status mapping for user-friendly display
+    const getStatusLabel = (status) => {
+        switch (status) {
+            case 'Active': return 'Pending';
+            case 'In Progress': return 'Responding';
+            case 'Resolved': return 'Resolved';
+            default: return status;
+        }
+    };
+
+    return (
+        <Container>
+            <Row className="mb-4">
+                <Col>
+                    <div className="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h1 className="text-danger">Emergency Alerts</h1>
+                            <p className="text-muted">List of submitted emergencies</p>
+                        </div>
+                    </div>
+                </Col>
+            </Row>
+            {error && <Alert variant="danger">{error}</Alert>}
+            {loading ? (
+                <div className="text-center my-5"><Spinner animation="border" /></div>
+            ) : (
+                <>
+                    <Row className="mb-4">
+                        <Col>
+                            <Alert variant="info">
+                                <strong>System Status:</strong> {alerts.filter(a => a.status === 'Active').length} active alerts currently affecting {alerts.filter(a => a.status === 'Active').reduce((sum, a) => sum + (a.affectedPopulation || 0), 0).toLocaleString()} people.
+                            </Alert>
+                        </Col>
+                    </Row>
+                    <Row>
+                        {alerts.map(alert => (
+                            <Col lg={6} key={alert.alertId} className="mb-4">
+                                <Card className="shadow-sm h-100">
+                                    <Card.Header className="d-flex justify-content-between align-items-start">
+                                        <div>
+                                            <Badge bg={getSeverityVariant(alert.priority)} className="me-2">
+                                                {alert.priority}
+                                            </Badge>
+                                            <Badge bg={getStatusVariant(alert.status)}>
+                                                {getStatusLabel(alert.status)}
+                                            </Badge>
+                                        </div>
+                                        <small className="text-muted">{alert.alertType}</small>
+                                    </Card.Header>
+                                    <Card.Body>
+                                        <Card.Title className="h5">{alert.title}</Card.Title>
+                                        <Card.Text>{alert.description}</Card.Text>
+                                        <div className="mb-3">
+                                            <small className="text-muted">
+                                                <i className="bi bi-geo-alt me-1"></i>
+                                                Area: {alert.geoTargeting}
+                                            </small>
+                                            <br />
+                                            <small className="text-muted">
+                                                <i className="bi bi-clock me-1"></i>
+                                                Created: {new Date(alert.createdDate).toLocaleString()}
+                                            </small>
+                                            <br />
+                                            <small className="text-muted">
+                                                <i className="bi bi-people me-1"></i>
+                                                Affected: {(alert.affectedPopulation || 0).toLocaleString()} people
+                                            </small>
+                                            {/* Assigned Team Info */}
+                                            {alert.assignedTeamName && (
+                                                <>
+                                                    <br />
+                                                    <small className="text-muted">
+                                                        <i className="bi bi-shield-check me-1"></i>
+                                                        Assigned Team: {alert.assignedTeamName}
+                                                    </small>
+                                                </>
+                                            )}
+                                        </div>
+                                    </Card.Body>
+                                    <Card.Footer className="bg-transparent">
+                                        <div className="d-flex gap-2">
+                                            <Button variant="outline-primary" size="sm" onClick={() => handleViewAlert(alert)}>
+                                                <i className="bi bi-eye me-1"></i>
+                                                View Details
+                                            </Button>
+                                        </div>
+                                    </Card.Footer>
+                                </Card>
+                            </Col>
+                        ))}
+                    </Row>
+                </>
+            )}
+            {/* View Alert Modal */}
+            <Modal show={showViewModal} onHide={() => setShowViewModal(false)} size="lg">
+                <Modal.Header closeButton>
+                    <Modal.Title>Alert Details</Modal.Title>
+                </Modal.Header>
+                <Modal.Body>
+                    {selectedAlert && (
+                        <div>
+                            <h4>{selectedAlert.title}</h4>
+                            <p>{selectedAlert.description}</p>
+                            <p><strong>Type:</strong> {selectedAlert.alertType}</p>
+                            <p><strong>Priority:</strong> {selectedAlert.priority}</p>
+                            <p><strong>Status:</strong> {getStatusLabel(selectedAlert.status)}</p>
+                            <p><strong>Area:</strong> {selectedAlert.geoTargeting}</p>
+                            <p><strong>Affected Population:</strong> {selectedAlert.affectedPopulation}</p>
+                            <p><strong>Created:</strong> {new Date(selectedAlert.createdDate).toLocaleString()}</p>
+                            <p><strong>Creator:</strong> {selectedAlert.creatorName}</p>
+                            {selectedAlert.assignedTeamName && (
+                                <p><strong>Assigned Team:</strong> {selectedAlert.assignedTeamName}</p>
+                            )}
+                        </div>
+                    )}
+                </Modal.Body>
+                <Modal.Footer>
+                    <Button variant="secondary" onClick={() => setShowViewModal(false)}>
+                        Close
+                    </Button>
+                </Modal.Footer>
+            </Modal>
+        </Container>
+    );
+}
+
+export default Alerts;

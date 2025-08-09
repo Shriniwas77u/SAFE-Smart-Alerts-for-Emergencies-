@@ -1,0 +1,47 @@
+.home-hero {
+    background: linear-gradient(135deg, #0066cc 0%, #00cc66 100%);
+    min-height: 60vh;
+    position: relative;
+    padding-top: 4rem;
+    padding-bottom: 4rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+    .home-hero h1, .home-hero h2, .home-hero p {
+        color: #fff;
+        text-shadow: 0 2px 8px rgba(0,0,0,0.12);
+    }
+
+    .home-hero .btn-light {
+        background: #fff;
+        color: #d32f2f;
+        border: none;
+        font-weight: bold;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        transition: background 0.2s, color 0.2s;
+    }
+
+        .home-hero .btn-light:hover {
+            background: #d32f2f;
+            color: #fff;
+        }
+
+.home-action-card {
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+    .home-action-card:hover {
+        transform: translateY(-6px) scale(1.03);
+        box-shadow: 0 8px 32px rgba(211,47,47,0.12);
+    }
+
+.card-title {
+    font-weight: 600;
+}
+
+.card-text {
+    color: #555;
+}

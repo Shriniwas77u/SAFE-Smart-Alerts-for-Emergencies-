@@ -1,0 +1,197 @@
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
+using SAFE.Server.Data;
+using SAFE.Server.Models;
+
+namespace SAFE.Server.Controllers
+{
+    [ApiController]
+    [Route("api/[controller]")]
+    public class IncidentsController : ControllerBase
+    {
+        private readonly SafeDbContext _context;
+
+        public IncidentsController(SafeDbContext context)
+        {
+            _context = context;
+        }
+
+        [HttpGet]
+        [Authorize]
+        public async Task<ActionResult<IEnumerable<IncidentDto>>> GetIncidents()
+        {
+            var incidents = await _context.Incidents
+                .Include(i => i.Reporter)
+                .OrderByDescending(i => i.CreatedDate)
+                .Select(i => new IncidentDto
+                {
+                    IncidentId = i.IncidentId,
+                    Title = i.Title,
+                    Description = i.Description,
+                    IncidentType = i.IncidentType,
+                    Status = i.Status,
+                    CreatedDate = i.CreatedDate,
+                    ResolvedDate = i.ResolvedDate,
+                    Location = i.Location,
+                    Priority = i.Priority,
+                    Notes = i.Notes,
+                    ReporterName = i.Reporter != null ? $"{i.Reporter.FirstName} {i.Reporter.LastName}" : string.Empty
+                })
+                .ToListAsync();
+
+            return Ok(incidents);
+        }
+
+        [HttpGet("{id}")]
+        [Authorize]
+        public async Task<ActionResult<IncidentDto>> GetIncident(int id)
+        {
+            var incident = await _context.Incidents
+                .Include(i => i.Reporter)
+                .FirstOrDefaultAsync(i => i.IncidentId == id);
+
+            if (incident == null)
+            {
+                return NotFound();
+            }
+
+            var dto = new IncidentDto
+            {
+                IncidentId = incident.IncidentId,
+                Title = incident.Title,
+                Description = incident.Description,
+                IncidentType = incident.IncidentType,
+                Status = incident.Status,
+                CreatedDate = incident.CreatedDate,
+                ResolvedDate = incident.ResolvedDate,
+                Location = incident.Location,
+                Priority = incident.Priority,
+                Notes = incident.Notes,
+                ReporterName = incident.Reporter != null ? $"{incident.Reporter.FirstName} {incident.Reporter.LastName}" : string.Empty
+            };
+
+            return Ok(dto);
+        }
+
+        [HttpPost]
+        [Authorize]
+        public async Task<ActionResult<IncidentDto>> CreateIncident(CreateIncidentRequest request)
+        {
+            var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
+
+            var incident = new Incident
+            {
+                Title = request.Title,
+                Description = request.Description,
+                IncidentType = request.IncidentType,
+                Status = "Reported",
+                Location = request.Location,
+                Latitude = request.Latitude,
+                Longitude = request.Longitude,
+                ReportedBy = userId,
+                CreatedDate = DateTime.UtcNow,
+                Priority = request.Priority,
+                Notes = request.Notes
+            };
+
+            _context.Incidents.Add(incident);
+            await _context.SaveChangesAsync();
+
+            return CreatedAtAction(nameof(GetIncident), new { id = incident.IncidentId }, new IncidentDto
+            {
+                IncidentId = incident.IncidentId,
+                Title = incident.Title,
+                Description = incident.Description,
+                IncidentType = incident.IncidentType,
+                Status = incident.Status,
+                CreatedDate = incident.CreatedDate,
+                Location = incident.Location,
+                Priority = incident.Priority,
+                Notes = incident.Notes
+            });
+        }
+
+        [HttpPut("{id}")]
+        [Authorize]
+        public async Task<IActionResult> UpdateIncident(int id, UpdateIncidentRequest request)
+        {
+            var incident = await _context.Incidents.FindAsync(id);
+            if (incident == null)
+            {
+                return NotFound();
+            }
+
+            incident.Title = request.Title;
+            incident.Description = request.Description;
+            incident.IncidentType = request.IncidentType;
+            incident.Status = request.Status;
+            incident.Location = request.Location;
+            incident.Priority = request.Priority;
+            incident.Notes = request.Notes;
+            if (request.Status == "Resolved")
+            {
+                incident.ResolvedDate = DateTime.UtcNow;
+            }
+
+            await _context.SaveChangesAsync();
+
+            return NoContent();
+        }
+
+        [HttpDelete("{id}")]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> DeleteIncident(int id)
+        {
+            var incident = await _context.Incidents.FindAsync(id);
+            if (incident == null)
+            {
+                return NotFound();
+            }
+
+            _context.Incidents.Remove(incident);
+            await _context.SaveChangesAsync();
+
+            return NoContent();
+        }
+    }
+
+    public class IncidentDto
+    {
+        public int IncidentId { get; set; }
+        public string Title { get; set; } = string.Empty;
+        public string Description { get; set; } = string.Empty;
+        public string IncidentType { get; set; } = string.Empty;
+        public string Status { get; set; } = string.Empty;
+        public DateTime CreatedDate { get; set; }
+        public DateTime? ResolvedDate { get; set; }
+        public string Location { get; set; } = string.Empty;
+        public string Priority { get; set; } = string.Empty;
+        public string Notes { get; set; } = string.Empty;
+        public string ReporterName { get; set; } = string.Empty;
+    }
+
+    public class CreateIncidentRequest
+    {
+        public string Title { get; set; } = string.Empty;
+        public string Description { get; set; } = string.Empty;
+        public string IncidentType { get; set; } = string.Empty;
+        public string Location { get; set; } = string.Empty;
+        public double? Latitude { get; set; }
+        public double? Longitude { get; set; }
+        public string Priority { get; set; } = "Medium";
+        public string Notes { get; set; } = string.Empty;
+    }
+
+    public class UpdateIncidentRequest
+    {
+        public string Title { get; set; } = string.Empty;
+        public string Description { get; set; } = string.Empty;
+        public string IncidentType { get; set; } = string.Empty;
+        public string Status { get; set; } = string.Empty;
+        public string Location { get; set; } = string.Empty;
+        public string Priority { get; set; } = string.Empty;
+        public string Notes { get; set; } = string.Empty;
+    }
+}

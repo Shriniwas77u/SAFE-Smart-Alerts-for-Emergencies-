@@ -1,0 +1,657 @@
+﻿import { useEffect, useState } from 'react';
+import { Container, Row, Col, Card, Badge, Button, Table, Spinner, Alert as RBAlert, Modal, Form, InputGroup } from 'react-bootstrap';
+import api, { adminIncidentsAPI, adminTeamsAPI, adminUsersAPI } from '../services/api';
+
+function AdminDashboard() {
+    const [summary, setSummary] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+    const [users, setUsers] = useState([]);
+    const [showUsers, setShowUsers] = useState(false);
+    const [selectedUser, setSelectedUser] = useState(null);
+    const [showUserModal, setShowUserModal] = useState(false);
+    const [userEdit, setUserEdit] = useState(null);
+    const [userEditError, setUserEditError] = useState('');
+    const [userEditSuccess, setUserEditSuccess] = useState('');
+    const [incidents, setIncidents] = useState([]);
+    const [incidentFilters, setIncidentFilters] = useState({ location: '', type: '', severity: '' });
+    const [teams, setTeams] = useState([]);
+    const [showIncidents, setShowIncidents] = useState(false);
+    const [assignIncidentId, setAssignIncidentId] = useState(null);
+    const [assignTeamId, setAssignTeamId] = useState('');
+    const [assignStatus, setAssignStatus] = useState('');
+    const [donations, setDonations] = useState([]);
+    const [showDonations, setShowDonations] = useState(false);
+    const [statusEdits, setStatusEdits] = useState({});
+    const [statusEditLoading, setStatusEditLoading] = useState({});
+    const [statusEditSuccess, setStatusEditSuccess] = useState({});
+    const [alerts, setAlerts] = useState([]);
+    const [showAlerts, setShowAlerts] = useState(false);
+    const [showCreateAlert, setShowCreateAlert] = useState(false);
+    const [createAlertData, setCreateAlertData] = useState({
+        title: '',
+        description: '',
+        alertType: '',
+        priority: 'Medium',
+        expiryDate: '',
+        geoTargeting: '',
+        affectedPopulation: 0
+    });
+    const [createAlertError, setCreateAlertError] = useState('');
+    const [createAlertSuccess, setCreateAlertSuccess] = useState('');
+
+    useEffect(() => {
+        fetchSummary();
+        fetchTeams();
+    }, []);
+
+    const fetchSummary = async () => {
+        setLoading(true);
+        setError(null);
+        try {
+            const res = await api.get('/admin/dashboard-summary');
+            setSummary(res.data);
+        } catch (err) {
+            setError('Failed to load dashboard data.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const fetchUsers = async () => {
+        setShowUsers(true);
+        try {
+            const res = await api.get('/admin/users');
+            setUsers(res.data);
+        } catch {
+            setError('Failed to load users.');
+        }
+    };
+
+    const fetchIncidents = async () => {
+        setShowIncidents(true);
+        try {
+            const data = await adminIncidentsAPI.getAll(incidentFilters);
+            setIncidents(data);
+        } catch {
+            setError('Failed to load incidents.');
+        }
+    };
+
+    const fetchTeams = async () => {
+        try {
+            const data = await adminTeamsAPI.getAll();
+            setTeams(data);
+        } catch {
+            setTeams([]);
+        }
+    };
+
+    const fetchDonations = async () => {
+        setShowDonations(true);
+        try {
+            const res = await api.get('/donations');
+            setDonations(res.data);
+        } catch {
+            setDonations([]);
+        }
+    };
+
+    const fetchAlerts = async () => {
+        setShowAlerts(true);
+        try {
+            const res = await api.get('/alerts');
+            setAlerts(res.data);
+        } catch {
+            setAlerts([]);
+        }
+    };
+
+    const handleEditUser = (user) => {
+        setUserEdit({ ...user });
+        setShowUserModal(true);
+        setUserEditError('');
+        setUserEditSuccess('');
+    };
+
+    const handleUserEditChange = (e) => {
+        setUserEdit({ ...userEdit, [e.target.name]: e.target.value });
+    };
+
+    const handleSaveUser = async () => {
+        setUserEditError('');
+        setUserEditSuccess('');
+        try {
+            await api.put(`/admin/users/${userEdit.userId}`, userEdit);
+            setUserEditSuccess('User updated successfully.');
+            fetchUsers();
+        } catch {
+            setUserEditError('Failed to update user.');
+        }
+    };
+
+    const handleIncidentFilterChange = (e) => {
+        setIncidentFilters({ ...incidentFilters, [e.target.name]: e.target.value });
+    };
+
+    const handleAssignTeam = async () => {
+        if (!assignIncidentId || !assignTeamId) return;
+        setAssignStatus('');
+        try {
+            await adminIncidentsAPI.assignTeam(assignIncidentId, parseInt(assignTeamId));
+            setAssignStatus('Assigned successfully!');
+            setAssignIncidentId(null);
+            setAssignTeamId('');
+            fetchIncidents();
+        } catch {
+            setAssignStatus('Failed to assign team.');
+        }
+    };
+
+    const handleStatusChange = (id, value) => {
+        setStatusEdits({ ...statusEdits, [id]: value });
+    };
+
+    const handleSaveStatus = async (id) => {
+        setStatusEditLoading({ ...statusEditLoading, [id]: true });
+        setStatusEditSuccess({ ...statusEditSuccess, [id]: false });
+        try {
+            await api.put(`/donations/${id}/status`, { status: statusEdits[id] });
+            setStatusEditSuccess({ ...statusEditSuccess, [id]: true });
+            fetchDonations();
+        } catch {
+            setStatusEditSuccess({ ...statusEditSuccess, [id]: false });
+        } finally {
+            setStatusEditLoading({ ...statusEditLoading, [id]: false });
+        }
+    };
+
+    const handleCreateAlertChange = e => {
+        setCreateAlertData({ ...createAlertData, [e.target.name]: e.target.value });
+    };
+
+    const handleCreateAlert = async () => {
+        setCreateAlertError('');
+        setCreateAlertSuccess('');
+        try {
+            const payload = { ...createAlertData, affectedPopulation: Number(createAlertData.affectedPopulation) };
+            await api.post('/alerts', payload);
+            setCreateAlertSuccess('Alert created successfully.');
+            setShowCreateAlert(false);
+            fetchAlerts();
+        } catch {
+            setCreateAlertError('Failed to create alert.');
+        }
+    };
+
+    useEffect(() => {
+        const openCreateAlert = () => setShowCreateAlert(true);
+        const openEmergencyReview = () => setShowIncidents(true);
+        const openDonationTracking = () => setShowDonations(true);
+        const openViewAlerts = () => setShowAlerts(true);
+        window.addEventListener('open-admin-create-alert', openCreateAlert);
+        window.addEventListener('open-admin-emergency-review', openEmergencyReview);
+        window.addEventListener('open-admin-donation-tracking', openDonationTracking);
+        window.addEventListener('open-admin-view-alerts', openViewAlerts);
+        return () => {
+            window.removeEventListener('open-admin-create-alert', openCreateAlert);
+            window.removeEventListener('open-admin-emergency-review', openEmergencyReview);
+            window.removeEventListener('open-admin-donation-tracking', openDonationTracking);
+            window.removeEventListener('open-admin-view-alerts', openViewAlerts);
+        };
+    }, []);
+
+    if (loading) return <div className="text-center my-5"><Spinner animation="border" /></div>;
+    if (error) return <RBAlert variant="danger" className="my-5 text-center">{error}</RBAlert>;
+    if (!summary) return null;
+
+    return (
+        <Container>
+            <Row className="mb-4">
+                <Col>
+                    <h1 className="text-danger">Admin Dashboard</h1>
+                    <p className="text-muted">System overview and recent activity</p>
+                </Col>
+            </Row>
+            <Row className="mb-4">
+                <Col md={3} className="mb-3">
+                    <Card className="text-center h-100 shadow-sm border-danger">
+                        <Card.Body>
+                            <div className="text-danger mb-2">
+                                <i className="bi bi-people-fill" style={{ fontSize: '2rem' }}></i>
+                            </div>
+                            <Card.Title className="h2 text-danger">{summary?.userCount}</Card.Title>
+                            <Card.Text className="text-muted">Users</Card.Text>
+                            <Button variant="outline-danger" size="sm" onClick={fetchUsers} className="mt-2">View Users</Button>
+                        </Card.Body>
+                    </Card>
+                </Col>
+                <Col md={3} className="mb-3">
+                    <Card className="text-center h-100 shadow-sm border-warning">
+                        <Card.Body>
+                            <div className="text-warning mb-2">
+                                <i className="bi bi-exclamation-triangle-fill" style={{ fontSize: '2rem' }}></i>
+                            </div>
+                            <Card.Title className="h2 text-warning">{summary?.alertCount}</Card.Title>
+                            <Card.Text className="text-muted">Alerts</Card.Text>
+                        </Card.Body>
+                    </Card>
+                </Col>
+                <Col md={3} className="mb-3">
+                    <Card className="text-center h-100 shadow-sm border-primary">
+                        <Card.Body>
+                            <div className="text-primary mb-2">
+                                <i className="bi bi-hand-thumbs-up-fill" style={{ fontSize: '2rem' }}></i>
+                            </div>
+                            <Card.Title className="h2 text-primary">{summary?.helpRequestCount}</Card.Title>
+                            <Card.Text className="text-muted">Help Requests</Card.Text>
+                        </Card.Body>
+                    </Card>
+                </Col>
+                <Col md={3} className="mb-3">
+                    <Card className="text-center h-100 shadow-sm border-success">
+                        <Card.Body>
+                            <div className="text-success mb-2">
+                                <i className="bi bi-flag-fill" style={{ fontSize: '2rem' }}></i>
+                            </div>
+                            <Card.Title className="h2 text-success">{summary?.incidentCount}</Card.Title>
+                            <Card.Text className="text-muted">Incidents</Card.Text>
+                        </Card.Body>
+                    </Card>
+                </Col>
+                <Col md={3} className="mb-3">
+                    <Card className="text-center h-100 shadow-sm border-info">
+                        <Card.Body>
+                            <div className="text-info mb-2">
+                                <i className="bi bi-people" style={{ fontSize: '2rem' }}></i>
+                            </div>
+                            <Card.Title className="h2 text-info">{summary?.teamCount}</Card.Title>
+                            <Card.Text className="text-muted">Response Teams</Card.Text>
+                        </Card.Body>
+                    </Card>
+                </Col>
+            </Row>
+            <Row>
+                <Col lg={4} className="mb-4">
+                    <Card className="shadow-sm">
+                        <Card.Header className="bg-warning text-white">
+                            <h5 className="mb-0">Recent Alerts</h5>
+                        </Card.Header>
+                        <Card.Body>
+                            {summary?.recentAlerts?.length === 0 && <div className="text-muted">No recent alerts.</div>}
+                            {summary?.recentAlerts?.map(alert => (
+                                <div key={alert.alertId} className="mb-2">
+                                    <strong>{alert.title}</strong>
+                                    <br />
+                                    <Badge bg={alert.status === 'Active' ? 'success' : 'secondary'}>{alert.status}</Badge>
+                                    <br />
+                                    <small className="text-muted">{new Date(alert.createdDate).toLocaleString()}</small>
+                                </div>
+                            ))}
+                        </Card.Body>
+                    </Card>
+                </Col>
+                <Col lg={4} className="mb-4">
+                    <Card className="shadow-sm">
+                        <Card.Header className="bg-primary text-white">
+                            <h5 className="mb-0">Recent Help Requests</h5>
+                        </Card.Header>
+                        <Card.Body>
+                            {summary?.recentHelpRequests?.length === 0 && <div className="text-muted">No recent help requests.</div>}
+                            {summary?.recentHelpRequests?.map(hr => (
+                                <div key={hr.helpRequestId} className="mb-2">
+                                    <strong>{hr.type}</strong>
+                                    <br />
+                                    <Badge bg={hr.status === 'Pending' ? 'warning' : hr.status === 'Assigned' ? 'info' : 'success'}>{hr.status}</Badge>
+                                    <br />
+                                    <small className="text-muted">{new Date(hr.createdDate).toLocaleString()}</small>
+                                </div>
+                            ))}
+                        </Card.Body>
+                    </Card>
+                </Col>
+                <Col lg={4} className="mb-4">
+                    <Card className="shadow-sm">
+                        <Card.Header className="bg-success text-white">
+                            <h5 className="mb-0">Recent Incidents</h5>
+                        </Card.Header>
+                        <Card.Body>
+                            {summary?.recentIncidents?.length === 0 && <div className="text-muted">No recent incidents.</div>}
+                            {summary?.recentIncidents?.map(inc => (
+                                <div key={inc.incidentId} className="mb-2">
+                                    <strong>{inc.title}</strong>
+                                    <br />
+                                    <Badge bg={inc.status === 'Reported' ? 'danger' : inc.status === 'In Progress' ? 'warning' : 'success'}>{inc.status}</Badge>
+                                    <br />
+                                    <small className="text-muted">{new Date(inc.createdDate).toLocaleString()}</small>
+                                    {inc.assignedTeamName && (
+                                        <div><span className="fw-bold">Assigned Team:</span> {inc.assignedTeamName}</div>
+                                    )}
+                                </div>
+                            ))}
+                        </Card.Body>
+                    </Card>
+                </Col>
+                <Col lg={4} className="mb-4">
+                    <Card className="shadow-sm">
+                        <Card.Header className="bg-info text-white">
+                            <h5 className="mb-0">Recent Response Teams</h5>
+                        </Card.Header>
+                        <Card.Body>
+                            {summary?.recentTeams?.length === 0 && <div className="text-muted">No recent teams.</div>}
+                            {summary?.recentTeams?.map(team => (
+                                <div key={team.responseTeamId} className="mb-2">
+                                    <strong>{team.name}</strong>
+                                    <br />
+                                    <Badge bg="info">{team.emergencyType}</Badge>
+                                    <br />
+                                    <small className="text-muted">{team.region}</small>
+                                </div>
+                            ))}
+                        </Card.Body>
+                    </Card>
+                </Col>
+            </Row>
+            <Row className="mb-4">
+                <Col>
+                    <Button variant="outline-success" onClick={fetchIncidents} className="me-2">Emergency Review Dashboard</Button>
+                    <Button variant="outline-info" onClick={fetchDonations} className="me-2">Donation Tracking</Button>
+                    <Button variant="outline-warning" onClick={fetchAlerts} className="me-2">View Alerts</Button>
+                    <Button variant="danger" onClick={() => setShowCreateAlert(true)}>Create Alert</Button>
+                </Col>
+            </Row>
+            {/* User Management Modal */}
+            <Modal show={showUsers} onHide={() => setShowUsers(false)} size="lg">
+                <Modal.Header closeButton>
+                    <Modal.Title>All Users</Modal.Title>
+                </Modal.Header>
+                <Modal.Body>
+                    <Table responsive hover>
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Name</th>
+                                <th>Email</th>
+                                <th>Role</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {users.map(user => (
+                                <tr key={user.userId}>
+                                    <td>{user.userId}</td>
+                                    <td>{user.firstName} {user.lastName}</td>
+                                    <td>{user.email}</td>
+                                    <td>{user.role}</td>
+                                    <td>{user.isActive ? 'Active' : 'Inactive'}</td>
+                                    <td>
+                                        <Button size="sm" variant="outline-primary" onClick={() => handleEditUser(user)}>Edit</Button>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </Table>
+                </Modal.Body>
+            </Modal>
+            {/* Edit User Modal */}
+            <Modal show={showUserModal} onHide={() => setShowUserModal(false)}>
+                <Modal.Header closeButton>
+                    <Modal.Title>Edit User</Modal.Title>
+                </Modal.Header>
+                <Modal.Body>
+                    {userEdit && (
+                        <Form>
+                            <Form.Group className="mb-2">
+                                <Form.Label>First Name</Form.Label>
+                                <Form.Control name="firstName" value={userEdit.firstName} onChange={handleUserEditChange} />
+                            </Form.Group>
+                            <Form.Group className="mb-2">
+                                <Form.Label>Last Name</Form.Label>
+                                <Form.Control name="lastName" value={userEdit.lastName} onChange={handleUserEditChange} />
+                            </Form.Group>
+                            <Form.Group className="mb-2">
+                                <Form.Label>Email</Form.Label>
+                                <Form.Control name="email" value={userEdit.email} onChange={handleUserEditChange} />
+                            </Form.Group>
+                            <Form.Group className="mb-2">
+                                <Form.Label>Role</Form.Label>
+                                <Form.Select name="role" value={userEdit.role} onChange={handleUserEditChange}>
+                                    <option value="User">User</option>
+                                    <option value="Admin">Admin</option>
+                                    <option value="Responder">Responder</option>
+                                </Form.Select>
+                            </Form.Group>
+                            <Form.Group className="mb-2">
+                                <Form.Label>Status</Form.Label>
+                                <Form.Select name="isActive" value={userEdit.isActive ? 'true' : 'false'} onChange={e => setUserEdit({ ...userEdit, isActive: e.target.value === 'true' })}>
+                                    <option value="true">Active</option>
+                                    <option value="false">Inactive</option>
+                                </Form.Select>
+                            </Form.Group>
+                            {userEditError && <RBAlert variant="danger">{userEditError}</RBAlert>}
+                            {userEditSuccess && <RBAlert variant="success">{userEditSuccess}</RBAlert>}
+                        </Form>
+                    )}
+                </Modal.Body>
+                <Modal.Footer>
+                    <Button variant="secondary" onClick={() => setShowUserModal(false)}>Close</Button>
+                    <Button variant="primary" onClick={handleSaveUser}>Save</Button>
+                </Modal.Footer>
+            </Modal>
+            {/* Emergency Review Modal */}
+            <Modal show={showIncidents} onHide={() => setShowIncidents(false)} size="xl">
+                <Modal.Header closeButton>
+                    <Modal.Title>Emergency Review Dashboard</Modal.Title>
+                </Modal.Header>
+                <Modal.Body>
+                    <Row className="mb-3">
+                        <Col md={4}>
+                            <InputGroup>
+                                <InputGroup.Text>Location</InputGroup.Text>
+                                <Form.Control name="location" value={incidentFilters.location} onChange={handleIncidentFilterChange} />
+                            </InputGroup>
+                        </Col>
+                        <Col md={4}>
+                            <InputGroup>
+                                <InputGroup.Text>Type</InputGroup.Text>
+                                <Form.Control name="type" value={incidentFilters.type} onChange={handleIncidentFilterChange} />
+                            </InputGroup>
+                        </Col>
+                        <Col md={4}>
+                            <InputGroup>
+                                <InputGroup.Text>Severity</InputGroup.Text>
+                                <Form.Control name="severity" value={incidentFilters.severity} onChange={handleIncidentFilterChange} />
+                            </InputGroup>
+                        </Col>
+                        <Col md={12} className="mt-2">
+                            <Button variant="primary" onClick={fetchIncidents}>Filter</Button>
+                        </Col>
+                    </Row>
+                    <Table responsive hover>
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Title</th>
+                                <th>Type</th>
+                                <th>Location</th>
+                                <th>Severity</th>
+                                <th>Status</th>
+                                <th>Assign Team</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {incidents.map(inc => (
+                                <tr key={inc.incidentId}>
+                                    <td>{inc.incidentId}</td>
+                                    <td>{inc.title}</td>
+                                    <td>{inc.incidentType}</td>
+                                    <td>{inc.location}</td>
+                                    <td>{inc.priority}</td>
+                                    <td>{inc.status}</td>
+                                    <td>
+                                        <Button size="sm" variant="outline-info" onClick={() => setAssignIncidentId(inc.incidentId)}>Assign</Button>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </Table>
+                    {assignIncidentId && (
+                        <div className="my-3">
+                            <h6>Assign Response Team to Incident #{assignIncidentId}</h6>
+                            <InputGroup>
+                                <Form.Select value={assignTeamId} onChange={e => setAssignTeamId(e.target.value)}>
+                                    <option value="">Select Team</option>
+                                    {teams.map(team => (
+                                        <option key={team.responseTeamId} value={team.responseTeamId}>{team.name} ({team.emergencyType})</option>
+                                    ))}
+                                </Form.Select>
+                                <Button variant="success" onClick={handleAssignTeam}>Assign</Button>
+                            </InputGroup>
+                            {assignStatus && <RBAlert variant={assignStatus.includes('success') ? 'success' : 'danger'} className="mt-2">{assignStatus}</RBAlert>}
+                        </div>
+                    )}
+                </Modal.Body>
+            </Modal>
+            {/* Donations Modal */}
+            <Modal show={showDonations} onHide={() => setShowDonations(false)} size="lg">
+                <Modal.Header closeButton>
+                    <Modal.Title>All Donations</Modal.Title>
+                </Modal.Header>
+                <Modal.Body>
+                    <Table responsive hover>
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>User</th>
+                                <th>Type</th>
+                                <th>Amount</th>
+                                <th>Payment</th>
+                                <th>Status</th>
+                                <th>Date</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {donations.map(d => (
+                                <tr key={d.donationId}>
+                                    <td>{d.donationId}</td>
+                                    <td>{d.user ? `${d.user.firstName} ${d.user.lastName}` : '-'}</td>
+                                    <td>{d.type}</td>
+                                    <td>{d.type === 'Funds' ? d.amount.toLocaleString('en-IN', { style: 'currency', currency: 'INR' }) : '-'}</td>
+                                    <td>{d.paymentMethod || '-'}</td>
+                                    <td>
+                                        <Form.Select
+                                            size="sm"
+                                            value={statusEdits[d.donationId] ?? d.status}
+                                            onChange={e => handleStatusChange(d.donationId, e.target.value)}
+                                            style={{ width: '120px', display: 'inline-block' }}
+                                        >
+                                            <option value="Pending">Pending</option>
+                                            <option value="Completed">Completed</option>
+                                            <option value="Failed">Failed</option>
+                                        </Form.Select>
+                                        <Button
+                                            size="sm"
+                                            variant="success"
+                                            className="ms-2"
+                                            disabled={statusEditLoading[d.donationId] || (statusEdits[d.donationId] ?? d.status) === d.status}
+                                            onClick={() => handleSaveStatus(d.donationId)}
+                                        >
+                                            {statusEditLoading[d.donationId] ? <Spinner size="sm" /> : 'Save'}
+                                        </Button>
+                                        {statusEditSuccess[d.donationId] && <span className="text-success ms-2">✔</span>}
+                                    </td>
+                                    <td>{new Date(d.createdDate).toLocaleString()}</td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </Table>
+                </Modal.Body>
+            </Modal>
+            {/* Alerts Modal */}
+            <Modal show={showAlerts} onHide={() => setShowAlerts(false)} size="lg">
+                <Modal.Header closeButton>
+                    <Modal.Title>All Alerts</Modal.Title>
+                </Modal.Header>
+                <Modal.Body>
+                    <Table responsive hover>
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Title</th>
+                                <th>Type</th>
+                                <th>Priority</th>
+                                <th>Status</th>
+                                <th>Created</th>
+                                <th>Expiry</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {alerts.map(a => (
+                                <tr key={a.alertId}>
+                                    <td>{a.alertId}</td>
+                                    <td>{a.title}</td>
+                                    <td>{a.alertType}</td>
+                                    <td>{a.priority}</td>
+                                    <td>{a.status}</td>
+                                    <td>{new Date(a.createdDate).toLocaleString()}</td>
+                                    <td>{a.expiryDate ? new Date(a.expiryDate).toLocaleString() : '-'}</td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </Table>
+                </Modal.Body>
+            </Modal>
+            {/* Create Alert Modal */}
+            <Modal show={showCreateAlert} onHide={() => setShowCreateAlert(false)}>
+                <Modal.Header closeButton>
+                    <Modal.Title>Create Alert</Modal.Title>
+                </Modal.Header>
+                <Modal.Body>
+                    <Form>
+                        <Form.Group className="mb-2">
+                            <Form.Label>Title</Form.Label>
+                            <Form.Control name="title" value={createAlertData.title} onChange={handleCreateAlertChange} />
+                        </Form.Group>
+                        <Form.Group className="mb-2">
+                            <Form.Label>Description</Form.Label>
+                            <Form.Control name="description" value={createAlertData.description} onChange={handleCreateAlertChange} as="textarea" rows={2} />
+                        </Form.Group>
+                        <Form.Group className="mb-2">
+                            <Form.Label>Type</Form.Label>
+                            <Form.Control name="alertType" value={createAlertData.alertType} onChange={handleCreateAlertChange} />
+                        </Form.Group>
+                        <Form.Group className="mb-2">
+                            <Form.Label>Priority</Form.Label>
+                            <Form.Select name="priority" value={createAlertData.priority} onChange={handleCreateAlertChange}>
+                                <option value="Low">Low</option>
+                                <option value="Medium">Medium</option>
+                                <option value="High">High</option>
+                            </Form.Select>
+                        </Form.Group>
+                        <Form.Group className="mb-2">
+                            <Form.Label>Expiry Date</Form.Label>
+                            <Form.Control name="expiryDate" type="datetime-local" value={createAlertData.expiryDate} onChange={handleCreateAlertChange} />
+                        </Form.Group>
+                        <Form.Group className="mb-2">
+                            <Form.Label>Geo Targeting</Form.Label>
+                            <Form.Control name="geoTargeting" value={createAlertData.geoTargeting} onChange={handleCreateAlertChange} />
+                        </Form.Group>
+                        <Form.Group className="mb-2">
+                            <Form.Label>Affected Population</Form.Label>
+                            <Form.Control name="affectedPopulation" type="number" value={createAlertData.affectedPopulation} onChange={handleCreateAlertChange} />
+                        </Form.Group>
+                        {createAlertError && <RBAlert variant="danger">{createAlertError}</RBAlert>}
+                        {createAlertSuccess && <RBAlert variant="success">{createAlertSuccess}</RBAlert>}
+                    </Form>
+                </Modal.Body>
+                <Modal.Footer>
+                    <Button variant="secondary" onClick={() => setShowCreateAlert(false)}>Cancel</Button>
+                    <Button variant="danger" onClick={handleCreateAlert}>Create</Button>
+                </Modal.Footer>
+            </Modal>
+        </Container>
+    );
+}
+
+export default AdminDashboard;

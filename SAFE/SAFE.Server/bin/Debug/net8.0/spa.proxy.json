@@ -3,7 +3,7 @@
 "ServerUrl": "https://localhost:50012",
 "RedirectUrl": "",
 "LaunchCommand": "npm run dev",
-"WorkingDirectory": "C:\\S9+\\SAFE\\SAFE\\SAFE.Server\\..\\safe.client",
+"WorkingDirectory": "C:\\S9+\\Files\\SAFE\\SAFE\\SAFE.Server\\..\\safe.client",
 "MaxTimeoutInSeconds": "120",
 "KeepRunning": "false"
 }

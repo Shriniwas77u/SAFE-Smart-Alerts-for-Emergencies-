@@ -1,0 +1,23 @@
+﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+
+namespace SAFE.Server.Models
+{
+    public class Donation
+    {
+        public int DonationId { get; set; }
+        [Required]
+        public int UserId { get; set; }
+        [Required]
+        [Column(TypeName = "decimal(18,2)")]
+        public decimal Amount { get; set; }
+        [Required]
+        public string Type { get; set; } = "Funds"; // Funds, Supplies, etc.
+        public string Message { get; set; } = string.Empty;
+        public DateTime CreatedDate { get; set; } = DateTime.UtcNow;
+        public string Status { get; set; } = "Pending"; // Pending, Completed, Failed
+        public string PaymentReference { get; set; } = string.Empty;
+        public string PaymentMethod { get; set; } = string.Empty; // e.g., Credit Card, UPI, PayPal
+        public User? User { get; set; }
+    }
+}

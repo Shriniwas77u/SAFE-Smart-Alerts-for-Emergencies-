@@ -1,0 +1,55 @@
+﻿import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { Container } from 'react-bootstrap';
+import './App.css';
+import { AuthProvider } from './contexts/AuthContext';
+import Navbar from './components/Navbar';
+import Home from './pages/Home';
+import Login from './pages/Login';
+import Register from './pages/Register';
+import Dashboard from './pages/Dashboard';
+import AdminDashboard from './pages/AdminDashboard';
+import Alerts from './pages/Alerts';
+import HelpRequests from './pages/HelpRequests';
+import ProtectedRoute from './components/ProtectedRoute';
+import { useAuth } from './contexts/AuthContext';
+
+function App() {
+    // Only show admin dashboard route for admin users
+    const { user, isAuthenticated } = useAuth ? useAuth() : { user: null, isAuthenticated: () => false };
+    return (
+        <AuthProvider>
+            <Router>
+                <div className="App">
+                    <Navbar />
+                    <Container className="mt-4">
+                        <Routes>
+                            <Route path="/" element={<Home />} />
+                            <Route path="/login" element={<Login />} />
+                            <Route path="/register" element={<Register />} />
+                            <Route path="/dashboard" element={
+                                <ProtectedRoute>
+                                    <Dashboard />
+                                </ProtectedRoute>
+                            } />
+                            {isAuthenticated && user?.role === 'Admin' && (
+                                <Route path="/admin" element={
+                                    <ProtectedRoute>
+                                        <AdminDashboard />
+                                    </ProtectedRoute>
+                                } />
+                            )}
+                            <Route path="/alerts" element={<Alerts />} />
+                            <Route path="/help-requests" element={
+                                <ProtectedRoute>
+                                    <HelpRequests />
+                                </ProtectedRoute>
+                            } />
+                        </Routes>
+                    </Container>
+                </div>
+            </Router>
+        </AuthProvider>
+    );
+}
+
+export default App;

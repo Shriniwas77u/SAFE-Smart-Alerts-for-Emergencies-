@@ -8,27 +8,26 @@ function Home() {
 
     const handleReportEmergency = () => {
         if (isAuthenticated()) {
-            // Navigate to alerts page to create new alert
             navigate('/alerts');
         } else {
-            // Redirect to login first
             navigate('/login');
         }
     };
 
     const handleGetHelp = () => {
         if (isAuthenticated()) {
-            // Navigate to help requests page
             navigate('/help-requests');
         } else {
-            // Redirect to login first
             navigate('/login');
         }
     };
 
     const handleDonate = () => {
-        // For now, show an alert - this will be implemented in Phase 2
-        alert('Donation feature coming soon! This will allow you to contribute to emergency relief efforts.');
+        if (isAuthenticated()) {
+            navigate('/donate');
+        } else {
+            navigate('/login', { state: { redirectTo: '/donate' } });
+        }
     };
 
     const handleQuickAction = (action) => {
@@ -36,7 +35,6 @@ function Home() {
             navigate('/login');
             return;
         }
-        
         switch (action) {
             case 'checkin':
                 alert('Check-in Safe feature coming soon! This will allow you to mark yourself as safe during emergencies.');
@@ -54,88 +52,71 @@ function Home() {
     };
 
     return (
-        <Container>
-            <Row className="mb-4">
-                <Col>
-                    <div className="text-center mb-5">
-                        <h1 className="display-4 fw-bold text-danger">SAFE</h1>
-                        <p className="lead text-muted">Smart Alert For Emergencies</p>
-                        <hr className="my-4" />
-                        <p>
-                            Emergency coordination, monitoring, and management system for natural disasters, 
-                            accidents, and crisis situations. Quick response through centralized resource allocation.
-                        </p>
-                    </div>
-                </Col>
-            </Row>
-            
-            <Alert variant="warning" className="mb-4">
-                <Alert.Heading>Emergency Status: Normal</Alert.Heading>
-                <p>No active emergency alerts in your area. Stay prepared and informed.</p>
-            </Alert>
-            
-            <Row>
-                <Col md={4} className="mb-4">
-                    <Card className="h-100 shadow-sm">
-                        <Card.Body className="text-center">
-                            <div className="text-primary mb-3">
-                                <i className="bi bi-exclamation-triangle-fill" style={{ fontSize: '3rem' }}></i>
-                            </div>
-                            <Card.Title>Report Emergency</Card.Title>
-                            <Card.Text>
-                                Quickly report emergencies with location details and request immediate assistance.
-                            </Card.Text>
-                            <Button variant="danger" size="lg" onClick={handleReportEmergency}>Report Now</Button>
-                        </Card.Body>
-                    </Card>
-                </Col>
-                
-                <Col md={4} className="mb-4">
-                    <Card className="h-100 shadow-sm">
-                        <Card.Body className="text-center">
-                            <div className="text-success mb-3">
-                                <i className="bi bi-hand-thumbs-up-fill" style={{ fontSize: '3rem' }}></i>
-                            </div>
-                            <Card.Title>Request Help</Card.Title>
-                            <Card.Text>
-                                Submit help requests for medical aid, shelter, food, or transportation assistance.
-                            </Card.Text>
-                            <Button variant="primary" size="lg" onClick={handleGetHelp}>Get Help</Button>
-                        </Card.Body>
-                    </Card>
-                </Col>
-                
-                <Col md={4} className="mb-4">
-                    <Card className="h-100 shadow-sm">
-                        <Card.Body className="text-center">
-                            <div className="text-warning mb-3">
-                                <i className="bi bi-heart-fill" style={{ fontSize: '3rem' }}></i>
-                            </div>
-                            <Card.Title>Donate</Card.Title>
-                            <Card.Text>
-                                Contribute to emergency relief efforts with monetary donations or resource supplies.
-                            </Card.Text>
-                            <Button variant="success" size="lg" onClick={handleDonate}>Donate</Button>
-                        </Card.Body>
-                    </Card>
-                </Col>
-            </Row>
-            
-            <Row className="mt-5">
-                <Col>
-                    <Card className="bg-light">
-                        <Card.Body>
-                            <h5>Quick Actions</h5>
-                            <div className="d-flex gap-2 flex-wrap">
-                                <Button variant="outline-primary" size="sm" onClick={() => handleQuickAction('checkin')}>Check-in Safe</Button>
-                                <Button variant="outline-secondary" size="sm" onClick={() => handleQuickAction('shelters')}>View Shelters</Button>
-                                <Button variant="outline-info" size="sm" onClick={() => handleQuickAction('contacts')}>Emergency Contacts</Button>
-                                <Button variant="outline-warning" size="sm" onClick={() => handleQuickAction('guidelines')}>Safety Guidelines</Button>
-                            </div>
-                        </Card.Body>
-                    </Card>
-                </Col>
-            </Row>
+        <Container fluid className="home-bg p-0">
+            <div className="hero-section text-center text-white d-flex flex-column justify-content-center align-items-center" style={{ minHeight: '60vh', background: 'rgba(211,47,47,0.7)', position: 'relative' }}>
+                <div style={{ zIndex: 2 }}>
+                    <h1 className="display-2 fw-bold mb-2" style={{ textShadow: '2px 2px 8px #000' }}>SAFE</h1>
+                    <h2 className="fw-light mb-3" style={{ textShadow: '1px 1px 6px #222' }}>Smart Alert For Emergencies</h2>
+                    <p className="lead mb-4" style={{ textShadow: '1px 1px 4px #333' }}>Emergency coordination, monitoring, and management system for natural disasters, accidents, and crisis situations. Quick response through centralized resource allocation.</p>
+                    <Button variant="light" size="lg" className="fw-bold px-4 py-2 shadow" onClick={handleReportEmergency} style={{ color: '#d32f2f', borderRadius: '30px', fontSize: '1.3rem' }}>Report Emergency</Button>
+                </div>
+                <div className="hero-overlay" style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.25)', zIndex: 1 }}></div>
+            </div>
+
+            <Container className="mt-n5 position-relative" style={{ zIndex: 3 }}>
+                <Row className="g-4 justify-content-center">
+                    <Col md={4} sm={6} xs={12}>
+                        <Card className="h-100 shadow border-0 home-action-card" style={{ borderRadius: '18px', background: 'rgba(255,255,255,0.95)' }}>
+                            <Card.Body className="text-center">
+                                <div className="text-primary mb-3">
+                                    <i className="bi bi-exclamation-triangle-fill" style={{ fontSize: '3rem' }}></i>
+                                </div>
+                                <Card.Title className="fw-bold">Report Emergency</Card.Title>
+                                <Card.Text>
+                                    Quickly report emergencies with location details and request immediate assistance.
+                                </Card.Text>
+                                <Button variant="danger" size="lg" style={{ borderRadius: '30px', fontWeight: '600' }} onClick={handleReportEmergency}>Report Now</Button>
+                            </Card.Body>
+                        </Card>
+                    </Col>
+                    <Col md={4} sm={6} xs={12}>
+                        <Card className="h-100 shadow border-0 home-action-card" style={{ borderRadius: '18px', background: 'rgba(255,255,255,0.95)' }}>
+                            <Card.Body className="text-center">
+                                <div className="text-success mb-3">
+                                    <i className="bi bi-hand-thumbs-up-fill" style={{ fontSize: '3rem' }}></i>
+                                </div>
+                                <Card.Title className="fw-bold">Request Help</Card.Title>
+                                <Card.Text>
+                                    Submit help requests for medical aid, shelter, food, or transportation assistance.
+                                </Card.Text>
+                                <Button variant="primary" size="lg" style={{ borderRadius: '30px', fontWeight: '600' }} onClick={handleGetHelp}>Get Help</Button>
+                            </Card.Body>
+                        </Card>
+                    </Col>
+                    <Col md={4} sm={6} xs={12}>
+                        <Card className="h-100 shadow border-0 home-action-card" style={{ borderRadius: '18px', background: 'rgba(255,255,255,0.95)' }}>
+                            <Card.Body className="text-center">
+                                <div className="text-warning mb-3">
+                                    <i className="bi bi-heart-fill" style={{ fontSize: '3rem' }}></i>
+                                </div>
+                                <Card.Title className="fw-bold">Donate</Card.Title>
+                                <Card.Text>
+                                    Contribute to emergency relief efforts with monetary donations or resource supplies.
+                                </Card.Text>
+                                <Button variant="success" size="lg" style={{ borderRadius: '30px', fontWeight: '600' }} onClick={handleDonate}>Donate</Button>
+                            </Card.Body>
+                        </Card>
+                    </Col>
+                </Row>
+                <Row className="mt-4">
+                    <Col md={12}>
+                        <Alert variant="warning" className="text-center shadow-sm" style={{ borderRadius: '18px', fontWeight: '500', fontSize: '1.1rem', background: 'rgba(255,255,224,0.95)' }}>
+                            <Alert.Heading style={{ fontWeight: '700', color: '#d32f2f' }}>Emergency Status: Normal</Alert.Heading>
+                            <p>No active emergency alerts in your area. Stay prepared and informed.</p>
+                        </Alert>
+                    </Col>
+                </Row>
+            </Container>
         </Container>
     );
 }

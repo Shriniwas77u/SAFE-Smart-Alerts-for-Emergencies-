@@ -1,0 +1,134 @@
+﻿import { useState } from 'react';
+import { Container, Row, Col, Card, Form, Button, Alert as RBAlert, Spinner, Table } from 'react-bootstrap';
+import api from '../services/api';
+import { useAuth } from '../contexts/AuthContext';
+
+function Donate() {
+    const { user } = useAuth();
+    const [amount, setAmount] = useState('');
+    const [type, setType] = useState('Funds');
+    const [message, setMessage] = useState('');
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState('');
+    const [success, setSuccess] = useState('');
+    const [donations, setDonations] = useState([]);
+
+    const fetchDonations = async () => {
+        setLoading(true);
+        setError('');
+        try {
+            const res = await api.get('/donations/my');
+            setDonations(res.data);
+        } catch {
+            setError('Failed to fetch donations.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // Fetch donations on mount
+    React.useEffect(() => {
+        fetchDonations();
+    }, []);
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        setError('');
+        setSuccess('');
+        if (!amount || isNaN(amount) || parseFloat(amount) <= 0) {
+            setError('Please enter a valid donation amount.');
+            return;
+        }
+        if (!type) {
+            setError('Please select a donation type.');
+            return;
+        }
+        setLoading(true);
+        try {
+            // TODO: Integrate payment gateway here
+            const res = await api.post('/donations', { amount: parseFloat(amount), type, message });
+            setSuccess('Donation submitted successfully!');
+            setAmount('');
+            setType('Funds');
+            setMessage('');
+            fetchDonations();
+        } catch {
+            setError('Failed to submit donation.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    return (
+        <Container>
+            <Row className="mb-4">
+                <Col>
+                    <h1 className="text-success">Make a Donation</h1>
+                    <p className="text-muted">Support our cause by donating funds or supplies.</p>
+                </Col>
+            </Row>
+            <Row>
+                <Col md={6}>
+                    <Card className="shadow-sm mb-4">
+                        <Card.Body>
+                            <Form onSubmit={handleSubmit}>
+                                <Form.Group className="mb-3">
+                                    <Form.Label>Amount</Form.Label>
+                                    <Form.Control type="number" min="1" step="0.01" value={amount} onChange={e => setAmount(e.target.value)} required />
+                                </Form.Group>
+                                <Form.Group className="mb-3">
+                                    <Form.Label>Type</Form.Label>
+                                    <Form.Select value={type} onChange={e => setType(e.target.value)} required>
+                                        <option value="Funds">Funds</option>
+                                        <option value="Supplies">Supplies</option>
+                                        <option value="Other">Other</option>
+                                    </Form.Select>
+                                </Form.Group>
+                                <Form.Group className="mb-3">
+                                    <Form.Label>Message (optional)</Form.Label>
+                                    <Form.Control as="textarea" rows={2} value={message} onChange={e => setMessage(e.target.value)} />
+                                </Form.Group>
+                                {error && <RBAlert variant="danger">{error}</RBAlert>}
+                                {success && <RBAlert variant="success">{success}</RBAlert>}
+                                <Button type="submit" variant="success" disabled={loading}>{loading ? <Spinner size="sm" /> : 'Donate'}</Button>
+                            </Form>
+                        </Card.Body>
+                    </Card>
+                </Col>
+                <Col md={6}>
+                    <Card className="shadow-sm mb-4">
+                        <Card.Header>My Donations</Card.Header>
+                        <Card.Body>
+                            {loading ? <Spinner animation="border" /> : (
+                                donations.length === 0 ? <div className="text-muted">No donations yet.</div> : (
+                                    <Table responsive hover size="sm">
+                                        <thead>
+                                            <tr>
+                                                <th>Amount</th>
+                                                <th>Type</th>
+                                                <th>Status</th>
+                                                <th>Date</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {donations.map(d => (
+                                                <tr key={d.donationId}>
+                                                    <td>${d.amount.toFixed(2)}</td>
+                                                    <td>{d.type}</td>
+                                                    <td>{d.status}</td>
+                                                    <td>{new Date(d.createdDate).toLocaleString()}</td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </Table>
+                                )
+                            )}
+                        </Card.Body>
+                    </Card>
+                </Col>
+            </Row>
+        </Container>
+    );
+}
+
+export default Donate;

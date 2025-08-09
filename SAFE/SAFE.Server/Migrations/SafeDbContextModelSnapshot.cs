@@ -77,6 +77,85 @@ namespace SAFE.Server.Migrations
                     b.HasIndex("CreatedBy");
 
                     b.ToTable("Alerts");
+
+                    b.HasData(
+                        new
+                        {
+                            AlertId = 1,
+                            AffectedPopulation = 5000,
+                            AlertType = "Weather",
+                            CreatedBy = 1,
+                            CreatedDate = new DateTime(2024, 6, 1, 8, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Thunderstorm expected in the downtown area.",
+                            ExpiryDate = new DateTime(2024, 6, 2, 8, 0, 0, 0, DateTimeKind.Utc),
+                            GeoTargeting = "Downtown",
+                            Priority = "High",
+                            Status = "Active",
+                            Title = "Severe Weather Warning"
+                        },
+                        new
+                        {
+                            AlertId = 2,
+                            AffectedPopulation = 20,
+                            AlertType = "Medical",
+                            CreatedBy = 1,
+                            CreatedDate = new DateTime(2024, 6, 1, 9, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Multiple injuries reported at North District.",
+                            ExpiryDate = new DateTime(2024, 6, 1, 18, 0, 0, 0, DateTimeKind.Utc),
+                            GeoTargeting = "North District",
+                            Priority = "Medium",
+                            Status = "Active",
+                            Title = "Medical Emergency"
+                        });
+                });
+
+            modelBuilder.Entity("SAFE.Server.Models.Donation", b =>
+                {
+                    b.Property<int>("DonationId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("DonationId"));
+
+                    b.Property<decimal>("Amount")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateTime>("CreatedDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Message")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<string>("PaymentMethod")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("PaymentReference")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("int");
+
+                    b.HasKey("DonationId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("Donations");
                 });
 
             modelBuilder.Entity("SAFE.Server.Models.HelpRequest", b =>
@@ -160,6 +239,9 @@ namespace SAFE.Server.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("IncidentId"));
 
+                    b.Property<int?>("AssignedTeamId")
+                        .HasColumnType("int");
+
                     b.Property<DateTime>("CreatedDate")
                         .HasColumnType("datetime2");
 
@@ -215,6 +297,90 @@ namespace SAFE.Server.Migrations
                     b.HasIndex("ReportedBy");
 
                     b.ToTable("Incidents");
+                });
+
+            modelBuilder.Entity("SAFE.Server.Models.Notification", b =>
+                {
+                    b.Property<int>("NotificationId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("NotificationId"));
+
+                    b.Property<DateTime>("CreatedDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("IncidentId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Message")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<int?>("UserId")
+                        .HasColumnType("int");
+
+                    b.HasKey("NotificationId");
+
+                    b.HasIndex("IncidentId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("Notifications");
+                });
+
+            modelBuilder.Entity("SAFE.Server.Models.ResponseTeam", b =>
+                {
+                    b.Property<int>("ResponseTeamId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ResponseTeamId"));
+
+                    b.Property<string>("ContactEmail")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("ContactPhone")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("CoverageZone")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("EmergencyType")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("Region")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.HasKey("ResponseTeamId");
+
+                    b.ToTable("ResponseTeams");
                 });
 
             modelBuilder.Entity("SAFE.Server.Models.User", b =>
@@ -308,6 +474,17 @@ namespace SAFE.Server.Migrations
                     b.Navigation("Creator");
                 });
 
+            modelBuilder.Entity("SAFE.Server.Models.Donation", b =>
+                {
+                    b.HasOne("SAFE.Server.Models.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("SAFE.Server.Models.HelpRequest", b =>
                 {
                     b.HasOne("SAFE.Server.Models.User", "AssignedResponder")
@@ -335,6 +512,23 @@ namespace SAFE.Server.Migrations
                         .IsRequired();
 
                     b.Navigation("Reporter");
+                });
+
+            modelBuilder.Entity("SAFE.Server.Models.Notification", b =>
+                {
+                    b.HasOne("SAFE.Server.Models.Incident", "Incident")
+                        .WithMany()
+                        .HasForeignKey("IncidentId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("SAFE.Server.Models.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("Incident");
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("SAFE.Server.Models.User", b =>

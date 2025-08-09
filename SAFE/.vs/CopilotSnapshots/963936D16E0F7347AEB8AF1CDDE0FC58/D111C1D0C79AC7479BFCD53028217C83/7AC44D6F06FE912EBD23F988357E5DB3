@@ -1,0 +1,40 @@
+﻿using System;
+using Microsoft.EntityFrameworkCore.Migrations;
+
+#nullable disable
+
+#pragma warning disable CA1814 // Prefer jagged arrays over multidimensional
+
+namespace SAFE.Server.Migrations
+{
+    /// <inheritdoc />
+    public partial class RemoveNotificationSeedData : Migration
+    {
+        /// <inheritdoc />
+        protected override void Up(MigrationBuilder migrationBuilder)
+        {
+            migrationBuilder.DeleteData(
+                table: "Notifications",
+                keyColumn: "NotificationId",
+                keyValue: 1);
+
+            migrationBuilder.DeleteData(
+                table: "Notifications",
+                keyColumn: "NotificationId",
+                keyValue: 2);
+        }
+
+        /// <inheritdoc />
+        protected override void Down(MigrationBuilder migrationBuilder)
+        {
+            migrationBuilder.InsertData(
+                table: "Notifications",
+                columns: new[] { "NotificationId", "CreatedDate", "IncidentId", "Message", "Status", "Type", "UserId" },
+                values: new object[,]
+                {
+                    { 1, new DateTime(2024, 6, 1, 8, 0, 0, 0, DateTimeKind.Utc), null, "Severe Weather Warning issued.", "Unread", "Alert", 1 },
+                    { 2, new DateTime(2024, 6, 1, 9, 0, 0, 0, DateTimeKind.Utc), null, "Medical Emergency reported.", "Unread", "Alert", 1 }
+                });
+        }
+    }
+}

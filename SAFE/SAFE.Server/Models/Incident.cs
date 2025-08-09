@@ -34,6 +34,8 @@ namespace SAFE.Server.Models
         
         public string Notes { get; set; } = string.Empty;
         
+        public int? AssignedTeamId { get; set; } // New property to track assigned team
+        
         // Navigation properties
         public User Reporter { get; set; } = null!;
     }

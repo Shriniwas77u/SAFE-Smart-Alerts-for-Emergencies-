@@ -13,6 +13,11 @@ namespace SAFE.Server.Data
         public DbSet<Alert> Alerts { get; set; }
         public DbSet<HelpRequest> HelpRequests { get; set; }
         public DbSet<Incident> Incidents { get; set; }
+        public DbSet<ResponseTeam> ResponseTeams { get; set; }
+        public DbSet<Notification> Notifications { get; set; }
+        public DbSet<Donation> Donations { get; set; } // Restored Donations DbSet
+        
+
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -84,11 +89,57 @@ namespace SAFE.Server.Data
                 entity.Property(e => e.Location).HasMaxLength(300);
                 entity.Property(e => e.Priority).IsRequired().HasMaxLength(20);
                 entity.Property(e => e.Notes).HasMaxLength(1000);
+                entity.Property(e => e.AssignedTeamId).HasColumnType("int").IsRequired(false);
 
                 entity.HasOne(i => i.Reporter)
                       .WithMany(u => u.ReportedIncidents)
                       .HasForeignKey(i => i.ReportedBy)
                       .OnDelete(DeleteBehavior.Restrict);
+            });
+
+            // ResponseTeam entity configuration
+            modelBuilder.Entity<ResponseTeam>(entity =>
+            {
+                entity.HasKey(e => e.ResponseTeamId);
+                entity.Property(e => e.Name).IsRequired().HasMaxLength(100);
+                entity.Property(e => e.EmergencyType).IsRequired().HasMaxLength(50);
+                entity.Property(e => e.Region).HasMaxLength(100);
+                entity.Property(e => e.ContactPhone).HasMaxLength(50);
+                entity.Property(e => e.ContactEmail).HasMaxLength(100);
+                entity.Property(e => e.CoverageZone).HasMaxLength(500);
+            });
+
+            // Notification entity configuration
+            modelBuilder.Entity<Notification>(entity =>
+            {
+                entity.HasKey(e => e.NotificationId);
+                entity.Property(e => e.Type).IsRequired().HasMaxLength(20);
+                entity.Property(e => e.Message).IsRequired().HasMaxLength(1000);
+                entity.Property(e => e.Status).HasMaxLength(20);
+                entity.HasOne(n => n.Incident)
+                      .WithMany()
+                      .HasForeignKey(n => n.IncidentId)
+                      .OnDelete(DeleteBehavior.SetNull);
+                entity.HasOne(n => n.User)
+                      .WithMany()
+                      .HasForeignKey(n => n.UserId)
+                      .OnDelete(DeleteBehavior.SetNull);
+            });
+
+            // Donation entity configuration
+            modelBuilder.Entity<Donation>(entity =>
+            {
+                entity.HasKey(e => e.DonationId);
+                entity.Property(e => e.Amount).IsRequired().HasColumnType("decimal(18,2)");
+                entity.Property(e => e.Type).IsRequired().HasMaxLength(50);
+                entity.Property(e => e.Message).HasMaxLength(1000);
+                entity.Property(e => e.Status).IsRequired().HasMaxLength(20);
+                entity.Property(e => e.PaymentReference).HasMaxLength(100);
+                entity.Property(e => e.PaymentMethod).HasMaxLength(50);
+                entity.HasOne(d => d.User)
+                      .WithMany()
+                      .HasForeignKey(d => d.UserId)
+                      .OnDelete(DeleteBehavior.Cascade);
             });
 
             // Seed data
@@ -103,9 +154,118 @@ namespace SAFE.Server.Data
                     PhoneNumber = "+1-555-0000",
                     Role = "Admin",
                     IsActive = true,
-                    CreatedDate = new DateTime(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc)
+                    CreatedDate = new DateTime(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+                    LastLoginDate = null,
+                    Address = "",
+                    EmergencyContact = ""
                 }
             );
+
+            // Seed Alerts
+            modelBuilder.Entity<Alert>().HasData(
+                new Alert
+                {
+                    AlertId = 1,
+                    Title = "Severe Weather Warning",
+                    Description = "Thunderstorm expected in the downtown area.",
+                    AlertType = "Weather",
+                    Priority = "High",
+                    Status = "Active",
+                    CreatedBy = 1,
+                    CreatedDate = new DateTime(2024, 6, 1, 8, 0, 0, DateTimeKind.Utc),
+                    ExpiryDate = new DateTime(2024, 6, 2, 8, 0, 0, DateTimeKind.Utc),
+                    GeoTargeting = "Downtown",
+                    AffectedPopulation = 5000
+                },
+                new Alert
+                {
+                    AlertId = 2,
+                    Title = "Medical Emergency",
+                    Description = "Multiple injuries reported at North District.",
+                    AlertType = "Medical",
+                    Priority = "Medium",
+                    Status = "Active",
+                    CreatedBy = 1,
+                    CreatedDate = new DateTime(2024, 6, 1, 9, 0, 0, DateTimeKind.Utc),
+                    ExpiryDate = new DateTime(2024, 6, 1, 18, 0, 0, DateTimeKind.Utc),
+                    GeoTargeting = "North District",
+                    AffectedPopulation = 20
+                }
+            );
+
+            // Seed ResponseTeams
+            modelBuilder.Entity<ResponseTeam>().HasData(
+                new ResponseTeam {
+                    ResponseTeamId = 1,
+                    Name = "Downtown Fire Response",
+                    EmergencyType = "Fire",
+                    Region = "Downtown",
+                    ContactPhone = "+1-555-1001",
+                    ContactEmail = "fire.downtown@safe.com",
+                    CoverageZone = "Downtown, Central Park"
+                },
+                new ResponseTeam {
+                    ResponseTeamId = 2,
+                    Name = "North District Medical Team",
+                    EmergencyType = "Medical",
+                    Region = "North District",
+                    ContactPhone = "+1-555-2002",
+                    ContactEmail = "medical.north@safe.com",
+                    CoverageZone = "North District, North Hospital"
+                },
+                new ResponseTeam {
+                    ResponseTeamId = 3,
+                    Name = "Flood Rescue South",
+                    EmergencyType = "Flood",
+                    Region = "South Zone",
+                    ContactPhone = "+1-555-3003",
+                    ContactEmail = "flood.south@safe.com",
+                    CoverageZone = "South Zone, Riverside"
+                },
+                new ResponseTeam {
+                    ResponseTeamId = 4,
+                    Name = "East Emergency Response",
+                    EmergencyType = "Accident",
+                    Region = "East Side",
+                    ContactPhone = "+1-555-4004",
+                    ContactEmail = "accident.east@safe.com",
+                    CoverageZone = "East Side, Highway 8"
+                },
+                new ResponseTeam {
+                    ResponseTeamId = 5,
+                    Name = "Central Disaster Team",
+                    EmergencyType = "Disaster",
+                    Region = "Central",
+                    ContactPhone = "+1-555-5005",
+                    ContactEmail = "disaster.central@safe.com",
+                    CoverageZone = "Central, City Hall"
+                }
+            );
+
+            // Seed Notifications
+            // Commented out to avoid migration PK conflicts
+            // modelBuilder.Entity<Notification>().HasData(
+            //     new Notification
+            //     {
+            //         NotificationId = 1,
+            //         Type = "Alert",
+            //         Message = "Severe Weather Warning issued.",
+            //         Status = "Unread",
+            //         UserId = 1,
+            //         IncidentId = null,
+            //         CreatedDate = new DateTime(2024, 6, 1, 8, 0, 0, DateTimeKind.Utc)
+            //     },
+            //     new Notification
+            //     {
+            //         NotificationId = 2,
+            //         Type = "Alert",
+            //         Message = "Medical Emergency reported.",
+            //         Status = "Unread",
+            //         UserId = 1,
+            //         IncidentId = null,
+            //         CreatedDate = new DateTime(2024, 6, 1, 9, 0, 0, DateTimeKind.Utc)
+            //     }
+            // );
         }
     }
 }

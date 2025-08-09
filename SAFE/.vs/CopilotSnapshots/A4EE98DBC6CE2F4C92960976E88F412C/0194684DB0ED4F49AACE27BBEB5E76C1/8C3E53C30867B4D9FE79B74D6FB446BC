@@ -1,0 +1,17 @@
+﻿{
+  "ConnectionStrings": {
+    "DefaultConnection": "Server=(localdb)\\mssqllocaldb;Database=SAFEDb;Trusted_Connection=true;MultipleActiveResultSets=true"
+  },
+  "Jwt": {
+    "Key": "SAFE-JWT-Secret-Key-For-Development-Only-Please-Change-In-Production",
+    "Issuer": "SAFE-API",
+    "Audience": "SAFE-Client"
+  },
+  "Logging": {
+    "LogLevel": {
+      "Default": "Information",
+      "Microsoft.AspNetCore": "Warning"
+    }
+  },
+  "AllowedHosts": "*"
+}

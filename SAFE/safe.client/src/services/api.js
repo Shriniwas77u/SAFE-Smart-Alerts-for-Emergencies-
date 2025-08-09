@@ -74,6 +74,11 @@ export const alertsAPI = {
         const response = await api.delete(`/alerts/${id}`);
         return response.data;
     },
+    
+    getMine: async () => {
+        const response = await api.get('/alerts/my-alerts');
+        return response.data;
+    },
 };
 
 // Help Requests API
@@ -107,6 +112,60 @@ export const helpRequestsAPI = {
         const response = await api.put(`/helprequests/${id}/status`, { status });
         return response.data;
     },
+    
+    update: async (id, requestData) => {
+        const response = await api.put(`/helprequests/${id}`, requestData);
+        return response.data;
+    },
+    
+    delete: async (id) => {
+        const response = await api.delete(`/helprequests/${id}`);
+        return response.data;
+    },
+};
+
+// Incidents API
+export const incidentsAPI = {
+    getAll: async () => {
+        const response = await api.get('/incidents');
+        return response.data;
+    },
+    getMine: async () => {
+        const response = await api.get('/incidents');
+        // Filter on client for now; ideally, backend should support /incidents/my
+        const user = JSON.parse(localStorage.getItem('user'));
+        return response.data.filter(i => i.reporterName && user && `${user.firstName} ${user.lastName}` === i.reporterName);
+    },
+    create: async (incidentData) => {
+        const response = await api.post('/incidents', incidentData);
+        return response.data;
+    },
+};
+
+// --- Admin User CRUD ---
+export const adminUsersAPI = {
+  getAll: async () => (await api.get('/admin/users')).data,
+  create: async (user) => (await api.post('/admin/users', user)).data,
+  update: async (id, user) => (await api.put(`/admin/users/${id}`, user)).data,
+  delete: async (id) => (await api.delete(`/admin/users/${id}`)).data,
+};
+
+// --- Admin Team CRUD ---
+export const adminTeamsAPI = {
+  getAll: async () => (await api.get('/admin/teams')).data,
+  create: async (team) => (await api.post('/admin/teams', team)).data,
+  update: async (id, team) => (await api.put(`/admin/teams/${id}`, team)).data,
+  delete: async (id) => (await api.delete(`/admin/teams/${id}`)).data,
+};
+
+// --- Admin Incident Filtering & Assignment ---
+export const adminIncidentsAPI = {
+  getAll: async (filters) => (await api.get('/admin/incidents', { params: filters })).data,
+  assignTeam: async (incidentId, teamId) => (await api.put(`/admin/incidents/${incidentId}/assign-team`, teamId)).data,
+};
+
+export const notificationsAPI = {
+    getMy: async () => (await api.get('/notifications/my')).data,
 };
 
 export default api;

@@ -1,0 +1,168 @@
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using SAFE.Server.Data;
+using SAFE.Server.Models;
+
+namespace SAFE.Server.Controllers
+{
+    [ApiController]
+    [Route("api/[controller]")]
+    [Authorize(Roles = "Admin")]
+    public class AdminController : ControllerBase
+    {
+        private readonly SafeDbContext _context;
+        public AdminController(SafeDbContext context)
+        {
+            _context = context;
+        }
+
+        [HttpGet("dashboard-summary")]
+        public async Task<IActionResult> GetDashboardSummary()
+        {
+            var userCount = await _context.Users.CountAsync();
+            var alertCount = await _context.Alerts.CountAsync();
+            var helpRequestCount = await _context.HelpRequests.CountAsync();
+            var incidentCount = await _context.Incidents.CountAsync();
+
+            var recentAlerts = await _context.Alerts
+                .OrderByDescending(a => a.CreatedDate)
+                .Take(5)
+                .Select(a => new { a.AlertId, a.Title, a.Status, a.CreatedDate })
+                .ToListAsync();
+
+            var recentHelpRequests = await _context.HelpRequests
+                .OrderByDescending(h => h.CreatedDate)
+                .Take(5)
+                .Select(h => new { h.HelpRequestId, h.Type, h.Status, h.CreatedDate })
+                .ToListAsync();
+
+            var recentIncidents = await _context.Incidents
+                .OrderByDescending(i => i.CreatedDate)
+                .Take(5)
+                .Select(i => new { i.IncidentId, i.Title, i.Status, i.CreatedDate })
+                .ToListAsync();
+
+            return Ok(new
+            {
+                userCount,
+                alertCount,
+                helpRequestCount,
+                incidentCount,
+                recentAlerts,
+                recentHelpRequests,
+                recentIncidents
+            });
+        }
+
+        // --- User CRUD ---
+        [HttpGet("users")]
+        public async Task<IActionResult> GetUsers() => Ok(await _context.Users.ToListAsync());
+
+        [HttpPost("users")]
+        public async Task<IActionResult> CreateUser([FromBody] User user)
+        {
+            user.CreatedDate = DateTime.UtcNow;
+            _context.Users.Add(user);
+            await _context.SaveChangesAsync();
+            return CreatedAtAction(nameof(GetUsers), new { id = user.UserId }, user);
+        }
+
+        [HttpPut("users/{id}")]
+        public async Task<IActionResult> UpdateUser(int id, [FromBody] User user)
+        {
+            var dbUser = await _context.Users.FindAsync(id);
+            if (dbUser == null) return NotFound();
+            dbUser.FirstName = user.FirstName;
+            dbUser.LastName = user.LastName;
+            dbUser.Email = user.Email;
+            dbUser.Role = user.Role;
+            dbUser.IsActive = user.IsActive;
+            dbUser.PhoneNumber = user.PhoneNumber;
+            dbUser.Address = user.Address;
+            dbUser.EmergencyContact = user.EmergencyContact;
+            await _context.SaveChangesAsync();
+            return NoContent();
+        }
+
+        [HttpDelete("users/{id}")]
+        public async Task<IActionResult> DeleteUser(int id)
+        {
+            var dbUser = await _context.Users.FindAsync(id);
+            if (dbUser == null) return NotFound();
+            _context.Users.Remove(dbUser);
+            await _context.SaveChangesAsync();
+            return NoContent();
+        }
+
+        // --- Team CRUD ---
+        [HttpGet("teams")]
+        public async Task<IActionResult> GetTeams() => Ok(await _context.ResponseTeams.ToListAsync());
+
+        [HttpPost("teams")]
+        public async Task<IActionResult> CreateTeam([FromBody] ResponseTeam team)
+        {
+            _context.ResponseTeams.Add(team);
+            await _context.SaveChangesAsync();
+            return CreatedAtAction(nameof(GetTeams), new { id = team.ResponseTeamId }, team);
+        }
+
+        [HttpPut("teams/{id}")]
+        public async Task<IActionResult> UpdateTeam(int id, [FromBody] ResponseTeam team)
+        {
+            var dbTeam = await _context.ResponseTeams.FindAsync(id);
+            if (dbTeam == null) return NotFound();
+            dbTeam.Name = team.Name;
+            dbTeam.EmergencyType = team.EmergencyType;
+            dbTeam.Region = team.Region;
+            dbTeam.ContactPhone = team.ContactPhone;
+            dbTeam.ContactEmail = team.ContactEmail;
+            dbTeam.CoverageZone = team.CoverageZone;
+            await _context.SaveChangesAsync();
+            return NoContent();
+        }
+
+        [HttpDelete("teams/{id}")]
+        public async Task<IActionResult> DeleteTeam(int id)
+        {
+            var dbTeam = await _context.ResponseTeams.FindAsync(id);
+            if (dbTeam == null) return NotFound();
+            _context.ResponseTeams.Remove(dbTeam);
+            await _context.SaveChangesAsync();
+            return NoContent();
+        }
+
+        // --- Incident Filtering & Assignment ---
+        [HttpGet("incidents")]
+        public async Task<IActionResult> GetIncidents([FromQuery] string? location, [FromQuery] string? type, [FromQuery] string? severity)
+        {
+            var query = _context.Incidents.AsQueryable();
+            if (!string.IsNullOrEmpty(location)) query = query.Where(i => i.Location.Contains(location));
+            if (!string.IsNullOrEmpty(type)) query = query.Where(i => i.IncidentType == type);
+            if (!string.IsNullOrEmpty(severity)) query = query.Where(i => i.Priority == severity);
+            var incidents = await query.OrderByDescending(i => i.CreatedDate).ToListAsync();
+            return Ok(incidents);
+        }
+
+        [HttpPut("incidents/{id}/assign-team")]
+        public async Task<IActionResult> AssignTeam(int id, [FromBody] int teamId)
+        {
+            var incident = await _context.Incidents.FindAsync(id);
+            if (incident == null) return NotFound();
+            // You may want to add a property to Incident for assigned team
+            // For now, just add a notification
+            var team = await _context.ResponseTeams.FindAsync(teamId);
+            if (team == null) return NotFound();
+            var notif = new Notification
+            {
+                Type = "InApp",
+                Message = $"Incident {incident.Title} assigned to team {team.Name}",
+                IncidentId = incident.IncidentId,
+                Status = "Pending"
+            };
+            _context.Notifications.Add(notif);
+            await _context.SaveChangesAsync();
+            return Ok();
+        }
+    }
+}

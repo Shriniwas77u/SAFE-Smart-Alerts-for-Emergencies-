@@ -1,0 +1,253 @@
+﻿import { useState } from 'react';
+import { Container, Row, Col, Card, Button, Alert, Badge, Form, Modal } from 'react-bootstrap';
+
+function Alerts() {
+    const [showCreateModal, setShowCreateModal] = useState(false);
+    const [newAlert, setNewAlert] = useState({
+        title: '',
+        description: '',
+        severity: 'Medium',
+        area: '',
+        alertType: 'General'
+    });
+
+    // Mock alerts data
+    const [alerts, setAlerts] = useState([
+        {
+            id: 1,
+            title: "Flood Warning - Downtown Area",
+            description: "Heavy rainfall has caused flooding in downtown streets. Avoid driving in affected areas.",
+            severity: "High",
+            area: "Downtown",
+            type: "Weather",
+            createdAt: "2024-01-15 14:30",
+            status: "Active",
+            affectedPopulation: 5000
+        },
+        {
+            id: 2,
+            title: "Power Outage - North District",
+            description: "Electrical grid failure affecting residential areas. Estimated repair time: 6-8 hours.",
+            severity: "Medium",
+            area: "North District",
+            type: "Infrastructure",
+            createdAt: "2024-01-15 11:15",
+            status: "Active",
+            affectedPopulation: 2500
+        },
+        {
+            id: 3,
+            title: "Road Closure - Highway 101",
+            description: "Traffic accident has closed Highway 101 between exits 15-17. Use alternate routes.",
+            severity: "Low",
+            area: "Highway 101",
+            type: "Traffic",
+            createdAt: "2024-01-15 09:45",
+            status: "Resolved",
+            affectedPopulation: 1000
+        }
+    ]);
+
+    const handleCreateAlert = () => {
+        const alert = {
+            id: alerts.length + 1,
+            ...newAlert,
+            createdAt: new Date().toLocaleString(),
+            status: "Active",
+            affectedPopulation: 0
+        };
+        setAlerts([alert, ...alerts]);
+        setNewAlert({
+            title: '',
+            description: '',
+            severity: 'Medium',
+            area: '',
+            alertType: 'General'
+        });
+        setShowCreateModal(false);
+    };
+
+    const getSeverityVariant = (severity) => {
+        switch (severity) {
+            case 'High': return 'danger';
+            case 'Medium': return 'warning';
+            case 'Low': return 'info';
+            default: return 'secondary';
+        }
+    };
+
+    const getStatusVariant = (status) => {
+        return status === 'Active' ? 'success' : 'secondary';
+    };
+
+    return (
+        <Container>
+            <Row className="mb-4">
+                <Col>
+                    <div className="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h1 className="text-danger">Emergency Alerts</h1>
+                            <p className="text-muted">Monitor and manage emergency alerts</p>
+                        </div>
+                        <Button variant="danger" onClick={() => setShowCreateModal(true)}>
+                            <i className="bi bi-plus-circle me-2"></i>
+                            Create Alert
+                        </Button>
+                    </div>
+                </Col>
+            </Row>
+
+            {/* Active Alerts Summary */}
+            <Row className="mb-4">
+                <Col>
+                    <Alert variant="info">
+                        <strong>System Status:</strong> {alerts.filter(a => a.status === 'Active').length} active alerts currently affecting {alerts.filter(a => a.status === 'Active').reduce((sum, a) => sum + a.affectedPopulation, 0).toLocaleString()} people.
+                    </Alert>
+                </Col>
+            </Row>
+
+            {/* Alerts List */}
+            <Row>
+                {alerts.map(alert => (
+                    <Col lg={6} key={alert.id} className="mb-4">
+                        <Card className="shadow-sm h-100">
+                            <Card.Header className="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <Badge bg={getSeverityVariant(alert.severity)} className="me-2">
+                                        {alert.severity}
+                                    </Badge>
+                                    <Badge bg={getStatusVariant(alert.status)}>
+                                        {alert.status}
+                                    </Badge>
+                                </div>
+                                <small className="text-muted">{alert.type}</small>
+                            </Card.Header>
+                            <Card.Body>
+                                <Card.Title className="h5">{alert.title}</Card.Title>
+                                <Card.Text>{alert.description}</Card.Text>
+                                
+                                <div className="mb-3">
+                                    <small className="text-muted">
+                                        <i className="bi bi-geo-alt me-1"></i>
+                                        Area: {alert.area}
+                                    </small>
+                                    <br />
+                                    <small className="text-muted">
+                                        <i className="bi bi-clock me-1"></i>
+                                        Created: {alert.createdAt}
+                                    </small>
+                                    <br />
+                                    <small className="text-muted">
+                                        <i className="bi bi-people me-1"></i>
+                                        Affected: {alert.affectedPopulation.toLocaleString()} people
+                                    </small>
+                                </div>
+                            </Card.Body>
+                            <Card.Footer className="bg-transparent">
+                                <div className="d-flex gap-2">
+                                    <Button variant="outline-primary" size="sm">
+                                        <i className="bi bi-eye me-1"></i>
+                                        View Details
+                                    </Button>
+                                    <Button variant="outline-secondary" size="sm">
+                                        <i className="bi bi-pencil me-1"></i>
+                                        Edit
+                                    </Button>
+                                    {alert.status === 'Active' && (
+                                        <Button variant="outline-danger" size="sm">
+                                            <i className="bi bi-x-circle me-1"></i>
+                                            Resolve
+                                        </Button>
+                                    )}
+                                </div>
+                            </Card.Footer>
+                        </Card>
+                    </Col>
+                ))}
+            </Row>
+
+            {/* Create Alert Modal */}
+            <Modal show={showCreateModal} onHide={() => setShowCreateModal(false)} size="lg">
+                <Modal.Header closeButton>
+                    <Modal.Title>Create New Emergency Alert</Modal.Title>
+                </Modal.Header>
+                <Modal.Body>
+                    <Form>
+                        <Form.Group className="mb-3">
+                            <Form.Label>Alert Title</Form.Label>
+                            <Form.Control
+                                type="text"
+                                value={newAlert.title}
+                                onChange={(e) => setNewAlert({...newAlert, title: e.target.value})}
+                                placeholder="Enter alert title"
+                            />
+                        </Form.Group>
+                        
+                        <Form.Group className="mb-3">
+                            <Form.Label>Description</Form.Label>
+                            <Form.Control
+                                as="textarea"
+                                rows={3}
+                                value={newAlert.description}
+                                onChange={(e) => setNewAlert({...newAlert, description: e.target.value})}
+                                placeholder="Enter detailed description"
+                            />
+                        </Form.Group>
+                        
+                        <Row>
+                            <Col md={6}>
+                                <Form.Group className="mb-3">
+                                    <Form.Label>Severity Level</Form.Label>
+                                    <Form.Select
+                                        value={newAlert.severity}
+                                        onChange={(e) => setNewAlert({...newAlert, severity: e.target.value})}
+                                    >
+                                        <option value="Low">Low</option>
+                                        <option value="Medium">Medium</option>
+                                        <option value="High">High</option>
+                                    </Form.Select>
+                                </Form.Group>
+                            </Col>
+                            <Col md={6}>
+                                <Form.Group className="mb-3">
+                                    <Form.Label>Alert Type</Form.Label>
+                                    <Form.Select
+                                        value={newAlert.alertType}
+                                        onChange={(e) => setNewAlert({...newAlert, alertType: e.target.value})}
+                                    >
+                                        <option value="General">General</option>
+                                        <option value="Weather">Weather</option>
+                                        <option value="Infrastructure">Infrastructure</option>
+                                        <option value="Medical">Medical</option>
+                                        <option value="Traffic">Traffic</option>
+                                        <option value="Security">Security</option>
+                                    </Form.Select>
+                                </Form.Group>
+                            </Col>
+                        </Row>
+                        
+                        <Form.Group className="mb-3">
+                            <Form.Label>Affected Area</Form.Label>
+                            <Form.Control
+                                type="text"
+                                value={newAlert.area}
+                                onChange={(e) => setNewAlert({...newAlert, area: e.target.value})}
+                                placeholder="Enter affected area or location"
+                            />
+                        </Form.Group>
+                    </Form>
+                </Modal.Body>
+                <Modal.Footer>
+                    <Button variant="secondary" onClick={() => setShowCreateModal(false)}>
+                        Cancel
+                    </Button>
+                    <Button variant="danger" onClick={handleCreateAlert}>
+                        Create Alert
+                    </Button>
+                </Modal.Footer>
+            </Modal>
+        </Container>
+    );
+}
+
+export default Alerts;

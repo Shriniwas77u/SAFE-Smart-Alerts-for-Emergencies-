@@ -1,0 +1,518 @@
+﻿import { useState, useEffect } from 'react';
+import { Container, Row, Col, Card, Button, Badge, Form, Modal, Table, Spinner, Alert } from 'react-bootstrap';
+import { helpRequestsAPI } from '../services/api';
+
+function HelpRequests() {
+    const [showCreateModal, setShowCreateModal] = useState(false);
+    const [showViewModal, setShowViewModal] = useState(false);
+    const [showEditModal, setShowEditModal] = useState(false);
+    const [selectedRequest, setSelectedRequest] = useState(null);
+    const [editRequest, setEditRequest] = useState(null);
+    const [newRequest, setNewRequest] = useState({
+        type: 'Medical',
+        description: '',
+        urgency: 'Medium',
+        location: '',
+        contactInfo: ''
+    });
+    const [requests, setRequests] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState('');
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [requestToDelete, setRequestToDelete] = useState(null);
+    const [showStatusModal, setShowStatusModal] = useState(false);
+    const [statusRequest, setStatusRequest] = useState(null);
+    const [newStatus, setNewStatus] = useState('');
+
+    useEffect(() => {
+        fetchRequests();
+    }, []);
+
+    const fetchRequests = async () => {
+        setLoading(true);
+        setError('');
+        try {
+            const data = await helpRequestsAPI.getAll();
+            setRequests(data);
+        } catch (err) {
+            setError('Failed to fetch help requests.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleCreateRequest = async () => {
+        try {
+            await helpRequestsAPI.create(newRequest);
+            setShowCreateModal(false);
+            setNewRequest({
+                type: 'Medical',
+                description: '',
+                urgency: 'Medium',
+                location: '',
+                contactInfo: ''
+            });
+            fetchRequests();
+        } catch (err) {
+            setError('Failed to create help request.');
+        }
+    };
+
+    const handleViewRequest = (request) => {
+        setSelectedRequest(request);
+        setShowViewModal(true);
+    };
+
+    const handleEditRequest = (request) => {
+        setEditRequest({ ...request });
+        setShowEditModal(true);
+    };
+
+    const handleEditRequestSave = async () => {
+        try {
+            await helpRequestsAPI.update(editRequest.helpRequestId, editRequest);
+            setShowEditModal(false);
+            setEditRequest(null);
+            fetchRequests();
+        } catch (err) {
+            setError('Failed to update help request.');
+        }
+    };
+
+    const handleDeleteRequest = (request) => {
+        setRequestToDelete(request);
+        setShowDeleteModal(true);
+    };
+
+    const confirmDeleteRequest = async () => {
+        if (!requestToDelete) return;
+        try {
+            await helpRequestsAPI.delete(requestToDelete.helpRequestId);
+            setShowDeleteModal(false);
+            setRequestToDelete(null);
+            fetchRequests();
+        } catch (err) {
+            setError('Failed to delete help request.');
+        }
+    };
+
+    const handleStatusChange = (request) => {
+        setStatusRequest(request);
+        setNewStatus(request.status);
+        setShowStatusModal(true);
+    };
+
+    const confirmStatusChange = async () => {
+        if (!statusRequest) return;
+        try {
+            await helpRequestsAPI.updateStatus(statusRequest.helpRequestId, newStatus);
+            setShowStatusModal(false);
+            setStatusRequest(null);
+            fetchRequests();
+        } catch (err) {
+            setError('Failed to update status.');
+        }
+    };
+
+    const getUrgencyVariant = (urgency) => {
+        switch (urgency) {
+            case 'High': return 'danger';
+            case 'Medium': return 'warning';
+            case 'Low': return 'info';
+            default: return 'secondary';
+        }
+    };
+
+    const getStatusVariant = (status) => {
+        switch (status) {
+            case 'Pending': return 'warning';
+            case 'Assigned': return 'info';
+            case 'In Progress': return 'primary';
+            case 'Completed': return 'success';
+            default: return 'secondary';
+        }
+    };
+
+    const getTypeIcon = (type) => {
+        switch (type) {
+            case 'Medical': return 'bi-heart-pulse';
+            case 'Shelter': return 'bi-house';
+            case 'Food': return 'bi-cup-straw';
+            case 'Transportation': return 'bi-car-front';
+            case 'Rescue': return 'bi-life-preserver';
+            default: return 'bi-question-circle';
+        }
+    };
+
+    return (
+        <Container>
+            <Row className="mb-4">
+                <Col>
+                    <div className="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h1 className="text-primary">Help Requests</h1>
+                            <p className="text-muted">Submit and manage emergency assistance requests</p>
+                        </div>
+                        <Button variant="primary" onClick={() => setShowCreateModal(true)}>
+                            <i className="bi bi-plus-circle me-2"></i>
+                            Request Help
+                        </Button>
+                    </div>
+                </Col>
+            </Row>
+            {error && <Alert variant="danger">{error}</Alert>}
+            {loading ? (
+                <div className="text-center my-5"><Spinner animation="border" /></div>
+            ) : (
+                <>
+                    <Row className="mb-4">
+                        <Col md={3} className="mb-2">
+                            <Card className="text-center border-warning">
+                                <Card.Body>
+                                    <h3 className="text-warning">{requests.filter(r => r.status === 'Pending').length}</h3>
+                                    <small className="text-muted">Pending</small>
+                                </Card.Body>
+                            </Card>
+                        </Col>
+                        <Col md={3} className="mb-2">
+                            <Card className="text-center border-primary">
+                                <Card.Body>
+                                    <h3 className="text-primary">{requests.filter(r => r.status === 'In Progress').length}</h3>
+                                    <small className="text-muted">In Progress</small>
+                                </Card.Body>
+                            </Card>
+                        </Col>
+                        <Col md={3} className="mb-2">
+                            <Card className="text-center border-info">
+                                <Card.Body>
+                                    <h3 className="text-info">{requests.filter(r => r.status === 'Assigned').length}</h3>
+                                    <small className="text-muted">Assigned</small>
+                                </Card.Body>
+                            </Card>
+                        </Col>
+                        <Col md={3} className="mb-2">
+                            <Card className="text-center border-success">
+                                <Card.Body>
+                                    <h3 className="text-success">{requests.filter(r => r.status === 'Completed').length}</h3>
+                                    <small className="text-muted">Completed</small>
+                                </Card.Body>
+                            </Card>
+                        </Col>
+                    </Row>
+                    <Row>
+                        <Col>
+                            <Card className="shadow-sm">
+                                <Card.Header>
+                                    <h5 className="mb-0">All Help Requests</h5>
+                                </Card.Header>
+                                <Card.Body className="p-0">
+                                    <Table responsive hover className="mb-0">
+                                        <thead className="table-light">
+                                            <tr>
+                                                <th>Type</th>
+                                                <th>Description</th>
+                                                <th>Urgency</th>
+                                                <th>Location</th>
+                                                <th>Requester</th>
+                                                <th>Status</th>
+                                                <th>Created</th>
+                                                <th>Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {requests.map(request => (
+                                                <tr key={request.helpRequestId}>
+                                                    <td>
+                                                        <i className={`bi ${getTypeIcon(request.type)} me-2 text-primary`}></i>
+                                                        {request.type}
+                                                    </td>
+                                                    <td>
+                                                        <div className="text-truncate" style={{ maxWidth: '200px' }}>
+                                                            {request.description}
+                                                        </div>
+                                                    </td>
+                                                    <td>
+                                                        <Badge bg={getUrgencyVariant(request.urgency)}>
+                                                            {request.urgency}
+                                                        </Badge>
+                                                    </td>
+                                                    <td>
+                                                        <small className="text-muted">{request.location}</small>
+                                                    </td>
+                                                    <td>{request.requesterName}</td>
+                                                    <td>
+                                                        <Badge bg={getStatusVariant(request.status)}>
+                                                            {request.status}
+                                                        </Badge>
+                                                        {request.assignedResponderName && (
+                                                            <div>
+                                                                <small className="text-muted">
+                                                                    Assigned to: {request.assignedResponderName}
+                                                                </small>
+                                                            </div>
+                                                        )}
+                                                        <Button variant="outline-info" size="sm" className="ms-2" onClick={() => handleStatusChange(request)}>
+                                                            Change
+                                                        </Button>
+                                                    </td>
+                                                    <td>
+                                                        <small className="text-muted">{new Date(request.createdDate).toLocaleString()}</small>
+                                                    </td>
+                                                    <td>
+                                                        <div className="d-flex gap-1">
+                                                            <Button variant="outline-primary" size="sm" onClick={() => handleViewRequest(request)}>
+                                                                <i className="bi bi-eye"></i>
+                                                            </Button>
+                                                            <Button variant="outline-secondary" size="sm" onClick={() => handleEditRequest(request)}>
+                                                                <i className="bi bi-pencil"></i>
+                                                            </Button>
+                                                            <Button variant="outline-danger" size="sm" onClick={() => handleDeleteRequest(request)}>
+                                                                <i className="bi bi-trash"></i>
+                                                            </Button>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </Table>
+                                </Card.Body>
+                            </Card>
+                        </Col>
+                    </Row>
+                </>
+            )}
+            {/* View Help Request Modal */}
+            <Modal show={showViewModal} onHide={() => setShowViewModal(false)} size="lg">
+                <Modal.Header closeButton>
+                    <Modal.Title>Help Request Details</Modal.Title>
+                </Modal.Header>
+                <Modal.Body>
+                    {selectedRequest && (
+                        <div>
+                            <h4>{selectedRequest.type}</h4>
+                            <p>{selectedRequest.description}</p>
+                            <p><strong>Urgency:</strong> {selectedRequest.urgency}</p>
+                            <p><strong>Status:</strong> {selectedRequest.status}</p>
+                            <p><strong>Location:</strong> {selectedRequest.location}</p>
+                            <p><strong>Contact Info:</strong> {selectedRequest.contactInfo}</p>
+                            <p><strong>Requester:</strong> {selectedRequest.requesterName}</p>
+                            <p><strong>Assigned Responder:</strong> {selectedRequest.assignedResponderName || 'N/A'}</p>
+                            <p><strong>Created:</strong> {new Date(selectedRequest.createdDate).toLocaleString()}</p>
+                            <p><strong>Notes:</strong> {selectedRequest.notes}</p>
+                        </div>
+                    )}
+                </Modal.Body>
+                <Modal.Footer>
+                    <Button variant="secondary" onClick={() => setShowViewModal(false)}>
+                        Close
+                    </Button>
+                </Modal.Footer>
+            </Modal>
+            {/* Edit Help Request Modal */}
+            <Modal show={showEditModal} onHide={() => setShowEditModal(false)} size="lg">
+                <Modal.Header closeButton>
+                    <Modal.Title>Edit Help Request</Modal.Title>
+                </Modal.Header>
+                <Modal.Body>
+                    {editRequest && (
+                        <Form>
+                            <Row>
+                                <Col md={6}>
+                                    <Form.Group className="mb-3">
+                                        <Form.Label>Request Type</Form.Label>
+                                        <Form.Select
+                                            value={editRequest.type}
+                                            onChange={(e) => setEditRequest({ ...editRequest, type: e.target.value })}
+                                        >
+                                            <option value="Medical">Medical Emergency</option>
+                                            <option value="Shelter">Shelter/Housing</option>
+                                            <option value="Food">Food & Supplies</option>
+                                            <option value="Transportation">Transportation</option>
+                                            <option value="Rescue">Rescue Operation</option>
+                                            <option value="Other">Other</option>
+                                        </Form.Select>
+                                    </Form.Group>
+                                </Col>
+                                <Col md={6}>
+                                    <Form.Group className="mb-3">
+                                        <Form.Label>Urgency Level</Form.Label>
+                                        <Form.Select
+                                            value={editRequest.urgency}
+                                            onChange={(e) => setEditRequest({ ...editRequest, urgency: e.target.value })}
+                                        >
+                                            <option value="Low">Low - Can wait several hours</option>
+                                            <option value="Medium">Medium - Needed within 2-3 hours</option>
+                                            <option value="High">High - Immediate attention required</option>
+                                        </Form.Select>
+                                    </Form.Group>
+                                </Col>
+                            </Row>
+                            <Form.Group className="mb-3">
+                                <Form.Label>Description</Form.Label>
+                                <Form.Control
+                                    as="textarea"
+                                    rows={3}
+                                    value={editRequest.description}
+                                    onChange={(e) => setEditRequest({ ...editRequest, description: e.target.value })}
+                                />
+                            </Form.Group>
+                            <Form.Group className="mb-3">
+                                <Form.Label>Location</Form.Label>
+                                <Form.Control
+                                    type="text"
+                                    value={editRequest.location}
+                                    onChange={(e) => setEditRequest({ ...editRequest, location: e.target.value })}
+                                />
+                            </Form.Group>
+                            <Form.Group className="mb-3">
+                                <Form.Label>Contact Information</Form.Label>
+                                <Form.Control
+                                    type="text"
+                                    value={editRequest.contactInfo}
+                                    onChange={(e) => setEditRequest({ ...editRequest, contactInfo: e.target.value })}
+                                />
+                            </Form.Group>
+                        </Form>
+                    )}
+                </Modal.Body>
+                <Modal.Footer>
+                    <Button variant="secondary" onClick={() => setShowEditModal(false)}>
+                        Cancel
+                    </Button>
+                    <Button variant="primary" onClick={handleEditRequestSave}>
+                        Save Changes
+                    </Button>
+                </Modal.Footer>
+            </Modal>
+            {/* Create Help Request Modal (unchanged) */}
+            <Modal show={showCreateModal} onHide={() => setShowCreateModal(false)} size="lg">
+                <Modal.Header closeButton>
+                    <Modal.Title>Submit Help Request</Modal.Title>
+                </Modal.Header>
+                <Modal.Body>
+                    <Form>
+                        <Row>
+                            <Col md={6}>
+                                <Form.Group className="mb-3">
+                                    <Form.Label>Request Type</Form.Label>
+                                    <Form.Select
+                                        value={newRequest.type}
+                                        onChange={(e) => setNewRequest({...newRequest, type: e.target.value})}
+                                    >
+                                        <option value="Medical">Medical Emergency</option>
+                                        <option value="Shelter">Shelter/Housing</option>
+                                        <option value="Food">Food & Supplies</option>
+                                        <option value="Transportation">Transportation</option>
+                                        <option value="Rescue">Rescue Operation</option>
+                                        <option value="Other">Other</option>
+                                    </Form.Select>
+                                </Form.Group>
+                            </Col>
+                            <Col md={6}>
+                                <Form.Group className="mb-3">
+                                    <Form.Label>Urgency Level</Form.Label>
+                                    <Form.Select
+                                        value={newRequest.urgency}
+                                        onChange={(e) => setNewRequest({...newRequest, urgency: e.target.value})}
+                                    >
+                                        <option value="Low">Low - Can wait several hours</option>
+                                        <option value="Medium">Medium - Needed within 2-3 hours</option>
+                                        <option value="High">High - Immediate attention required</option>
+                                    </Form.Select>
+                                </Form.Group>
+                            </Col>
+                        </Row>
+                        <Form.Group className="mb-3">
+                            <Form.Label>Description</Form.Label>
+                            <Form.Control
+                                as="textarea"
+                                rows={3}
+                                value={newRequest.description}
+                                onChange={(e) => setNewRequest({...newRequest, description: e.target.value})}
+                                placeholder="Provide detailed description of help needed"
+                            />
+                        </Form.Group>
+                        <Form.Group className="mb-3">
+                            <Form.Label>Location</Form.Label>
+                            <Form.Control
+                                type="text"
+                                value={newRequest.location}
+                                onChange={(e) => setNewRequest({...newRequest, location: e.target.value})}
+                                placeholder="Enter your current location or address"
+                            />
+                        </Form.Group>
+                        <Form.Group className="mb-3">
+                            <Form.Label>Contact Information</Form.Label>
+                            <Form.Control
+                                type="text"
+                                value={newRequest.contactInfo}
+                                onChange={(e) => setNewRequest({...newRequest, contactInfo: e.target.value})}
+                                placeholder="Phone number or emergency contact"
+                            />
+                        </Form.Group>
+                    </Form>
+                </Modal.Body>
+                <Modal.Footer>
+                    <Button variant="secondary" onClick={() => setShowCreateModal(false)}>
+                        Cancel
+                    </Button>
+                    <Button variant="primary" onClick={handleCreateRequest}>
+                        Submit Request
+                    </Button>
+                </Modal.Footer>
+            </Modal>
+            {/* Delete Help Request Modal */}
+            <Modal show={showDeleteModal} onHide={() => setShowDeleteModal(false)}>
+                <Modal.Header closeButton>
+                    <Modal.Title>Delete Help Request</Modal.Title>
+                </Modal.Header>
+                <Modal.Body>
+                    {requestToDelete && (
+                        <>
+                            <p>Are you sure you want to delete the help request <strong>{requestToDelete.type}</strong>?</p>
+                        </>
+                    )}
+                </Modal.Body>
+                <Modal.Footer>
+                    <Button variant="secondary" onClick={() => setShowDeleteModal(false)}>
+                        Cancel
+                    </Button>
+                    <Button variant="danger" onClick={confirmDeleteRequest}>
+                        Delete
+                    </Button>
+                </Modal.Footer>
+            </Modal>
+            {/* Status Change Modal */}
+            <Modal show={showStatusModal} onHide={() => setShowStatusModal(false)}>
+                <Modal.Header closeButton>
+                    <Modal.Title>Change Status</Modal.Title>
+                </Modal.Header>
+                <Modal.Body>
+                    {statusRequest && (
+                        <Form>
+                            <Form.Group>
+                                <Form.Label>Status</Form.Label>
+                                <Form.Select value={newStatus} onChange={e => setNewStatus(e.target.value)}>
+                                    <option value="Pending">Pending</option>
+                                    <option value="Assigned">Assigned</option>
+                                    <option value="In Progress">In Progress</option>
+                                    <option value="Completed">Completed</option>
+                                </Form.Select>
+                            </Form.Group>
+                        </Form>
+                    )}
+                </Modal.Body>
+                <Modal.Footer>
+                    <Button variant="secondary" onClick={() => setShowStatusModal(false)}>
+                        Cancel
+                    </Button>
+                    <Button variant="primary" onClick={confirmStatusChange}>
+                        Save
+                    </Button>
+                </Modal.Footer>
+            </Modal>
+        </Container>
+    );
+}
+
+export default HelpRequests;

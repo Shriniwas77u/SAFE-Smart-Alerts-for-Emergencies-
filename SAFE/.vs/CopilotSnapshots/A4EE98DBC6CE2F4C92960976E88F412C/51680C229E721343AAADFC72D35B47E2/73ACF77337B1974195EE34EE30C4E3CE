@@ -1,0 +1,145 @@
+﻿import { useEffect, useState } from 'react';
+import { Container, Row, Col, Card, Badge, Button, Table, Spinner, Alert as RBAlert } from 'react-bootstrap';
+import api from '../services/api';
+
+function AdminDashboard() {
+    const [summary, setSummary] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+
+    useEffect(() => {
+        const fetchSummary = async () => {
+            try {
+                const res = await api.get('/admin/dashboard-summary');
+                setSummary(res.data);
+            } catch (err) {
+                setError('Failed to load dashboard data.');
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchSummary();
+    }, []);
+
+    if (loading) return <div className="text-center my-5"><Spinner animation="border" /></div>;
+    if (error) return <RBAlert variant="danger" className="my-5 text-center">{error}</RBAlert>;
+    if (!summary) return null;
+
+    return (
+        <Container>
+            <Row className="mb-4">
+                <Col>
+                    <h1 className="text-danger">Admin Dashboard</h1>
+                    <p className="text-muted">System overview and recent activity</p>
+                </Col>
+            </Row>
+            <Row className="mb-4">
+                <Col md={3} className="mb-3">
+                    <Card className="text-center h-100 shadow-sm border-danger">
+                        <Card.Body>
+                            <div className="text-danger mb-2">
+                                <i className="bi bi-people-fill" style={{ fontSize: '2rem' }}></i>
+                            </div>
+                            <Card.Title className="h2 text-danger">{summary.userCount}</Card.Title>
+                            <Card.Text className="text-muted">Users</Card.Text>
+                        </Card.Body>
+                    </Card>
+                </Col>
+                <Col md={3} className="mb-3">
+                    <Card className="text-center h-100 shadow-sm border-warning">
+                        <Card.Body>
+                            <div className="text-warning mb-2">
+                                <i className="bi bi-exclamation-triangle-fill" style={{ fontSize: '2rem' }}></i>
+                            </div>
+                            <Card.Title className="h2 text-warning">{summary.alertCount}</Card.Title>
+                            <Card.Text className="text-muted">Alerts</Card.Text>
+                        </Card.Body>
+                    </Card>
+                </Col>
+                <Col md={3} className="mb-3">
+                    <Card className="text-center h-100 shadow-sm border-primary">
+                        <Card.Body>
+                            <div className="text-primary mb-2">
+                                <i className="bi bi-hand-thumbs-up-fill" style={{ fontSize: '2rem' }}></i>
+                            </div>
+                            <Card.Title className="h2 text-primary">{summary.helpRequestCount}</Card.Title>
+                            <Card.Text className="text-muted">Help Requests</Card.Text>
+                        </Card.Body>
+                    </Card>
+                </Col>
+                <Col md={3} className="mb-3">
+                    <Card className="text-center h-100 shadow-sm border-success">
+                        <Card.Body>
+                            <div className="text-success mb-2">
+                                <i className="bi bi-flag-fill" style={{ fontSize: '2rem' }}></i>
+                            </div>
+                            <Card.Title className="h2 text-success">{summary.incidentCount}</Card.Title>
+                            <Card.Text className="text-muted">Incidents</Card.Text>
+                        </Card.Body>
+                    </Card>
+                </Col>
+            </Row>
+            <Row>
+                <Col lg={4} className="mb-4">
+                    <Card className="shadow-sm">
+                        <Card.Header className="bg-warning text-white">
+                            <h5 className="mb-0">Recent Alerts</h5>
+                        </Card.Header>
+                        <Card.Body>
+                            {summary.recentAlerts.length === 0 && <div className="text-muted">No recent alerts.</div>}
+                            {summary.recentAlerts.map(alert => (
+                                <div key={alert.alertId} className="mb-2">
+                                    <strong>{alert.title}</strong>
+                                    <br />
+                                    <Badge bg={alert.status === 'Active' ? 'success' : 'secondary'}>{alert.status}</Badge>
+                                    <br />
+                                    <small className="text-muted">{new Date(alert.createdDate).toLocaleString()}</small>
+                                </div>
+                            ))}
+                        </Card.Body>
+                    </Card>
+                </Col>
+                <Col lg={4} className="mb-4">
+                    <Card className="shadow-sm">
+                        <Card.Header className="bg-primary text-white">
+                            <h5 className="mb-0">Recent Help Requests</h5>
+                        </Card.Header>
+                        <Card.Body>
+                            {summary.recentHelpRequests.length === 0 && <div className="text-muted">No recent help requests.</div>}
+                            {summary.recentHelpRequests.map(hr => (
+                                <div key={hr.helpRequestId} className="mb-2">
+                                    <strong>{hr.type}</strong>
+                                    <br />
+                                    <Badge bg={hr.status === 'Pending' ? 'warning' : hr.status === 'Assigned' ? 'info' : 'success'}>{hr.status}</Badge>
+                                    <br />
+                                    <small className="text-muted">{new Date(hr.createdDate).toLocaleString()}</small>
+                                </div>
+                            ))}
+                        </Card.Body>
+                    </Card>
+                </Col>
+                <Col lg={4} className="mb-4">
+                    <Card className="shadow-sm">
+                        <Card.Header className="bg-success text-white">
+                            <h5 className="mb-0">Recent Incidents</h5>
+                        </Card.Header>
+                        <Card.Body>
+                            {summary.recentIncidents.length === 0 && <div className="text-muted">No recent incidents.</div>}
+                            {summary.recentIncidents.map(inc => (
+                                <div key={inc.incidentId} className="mb-2">
+                                    <strong>{inc.title}</strong>
+                                    <br />
+                                    <Badge bg={inc.status === 'Reported' ? 'danger' : inc.status === 'In Progress' ? 'warning' : 'success'}>{inc.status}</Badge>
+                                    <br />
+                                    <small className="text-muted">{new Date(inc.createdDate).toLocaleString()}</small>
+                                </div>
+                            ))}
+                        </Card.Body>
+                    </Card>
+                </Col>
+            </Row>
+        </Container>
+    );
+}
+
+export default AdminDashboard;

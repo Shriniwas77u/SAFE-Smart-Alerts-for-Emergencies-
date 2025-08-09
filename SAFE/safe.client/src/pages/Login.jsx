@@ -68,28 +68,34 @@ function Login() {
                             
                             {error && <Alert variant="danger">{error}</Alert>}
                             
-                            <Form onSubmit={handleSubmit}>
-                                <Form.Group className="mb-3">
-                                    <Form.Label>Email Address</Form.Label>
+                            <Form onSubmit={handleSubmit} aria-label="Login form">
+                                <Form.Group className="mb-3" controlId="loginEmail">
+                                    <Form.Label htmlFor="loginEmail">Email Address</Form.Label>
                                     <Form.Control
                                         type="email"
+                                        id="loginEmail"
                                         name="email"
                                         value={formData.email}
                                         onChange={handleChange}
                                         placeholder="Enter your email"
                                         required
+                                        autoComplete="email"
+                                        title="Email address"
                                     />
                                 </Form.Group>
                                 
-                                <Form.Group className="mb-3">
-                                    <Form.Label>Password</Form.Label>
+                                <Form.Group className="mb-3" controlId="loginPassword">
+                                    <Form.Label htmlFor="loginPassword">Password</Form.Label>
                                     <Form.Control
                                         type="password"
+                                        id="loginPassword"
                                         name="password"
                                         value={formData.password}
                                         onChange={handleChange}
                                         placeholder="Enter your password"
                                         required
+                                        autoComplete="current-password"
+                                        title="Password"
                                     />
                                 </Form.Group>
                                 
@@ -97,6 +103,9 @@ function Login() {
                                     <Form.Check
                                         type="checkbox"
                                         label="Remember me"
+                                        id="rememberMe"
+                                        name="rememberMe"
+                                        autoComplete="off"
                                     />
                                 </div>
                                 
@@ -106,6 +115,7 @@ function Login() {
                                     size="lg" 
                                     className="w-100 mb-3"
                                     disabled={loading}
+                                    aria-label="Login"
                                 >
                                     {loading ? (
                                         <>

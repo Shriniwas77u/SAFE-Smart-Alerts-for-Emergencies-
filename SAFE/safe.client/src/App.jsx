@@ -7,9 +7,15 @@ import Home from './pages/Home';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
+import AdminDashboard from './pages/AdminDashboard';
 import Alerts from './pages/Alerts';
 import HelpRequests from './pages/HelpRequests';
 import ProtectedRoute from './components/ProtectedRoute';
+import AdminLogin from './pages/AdminLogin';
+import AdminRegister from './pages/AdminRegister';
+import Notifications from './pages/Notifications';
+import Donate from './pages/Donate';
+import EmergencyContact from './pages/EmergencyContact';
 
 function App() {
     return (
@@ -21,10 +27,17 @@ function App() {
                         <Routes>
                             <Route path="/" element={<Home />} />
                             <Route path="/login" element={<Login />} />
+                            <Route path="/admin-login" element={<AdminLogin />} />
+                            <Route path="/admin-register" element={<AdminRegister />} />
                             <Route path="/register" element={<Register />} />
                             <Route path="/dashboard" element={
                                 <ProtectedRoute>
                                     <Dashboard />
+                                </ProtectedRoute>
+                            } />
+                            <Route path="/admin" element={
+                                <ProtectedRoute requiredRole="Admin">
+                                    <AdminDashboard />
                                 </ProtectedRoute>
                             } />
                             <Route path="/alerts" element={<Alerts />} />
@@ -33,6 +46,17 @@ function App() {
                                     <HelpRequests />
                                 </ProtectedRoute>
                             } />
+                            <Route path="/notifications" element={
+                                <ProtectedRoute>
+                                    <Notifications />
+                                </ProtectedRoute>
+                            } />
+                            <Route path="/donate" element={
+                                <ProtectedRoute>
+                                    <Donate />
+                                </ProtectedRoute>
+                            } />
+                            <Route path="/emergency-contact" element={<EmergencyContact />} />
                         </Routes>
                     </Container>
                 </div>

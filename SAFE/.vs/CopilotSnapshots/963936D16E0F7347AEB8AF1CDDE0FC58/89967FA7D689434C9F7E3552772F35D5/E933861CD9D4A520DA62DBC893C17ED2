@@ -1,0 +1,57 @@
+﻿using SAFE.Server.Data;
+using SAFE.Server.Models;
+using Twilio;
+using Twilio.Rest.Api.V2010.Account;
+using Microsoft.Extensions.Configuration;
+using System.Threading.Tasks;
+
+namespace SAFE.Server.Services
+{
+    public class NotificationService
+    {
+        private readonly SafeDbContext _context;
+        private readonly IConfiguration _config;
+
+        public NotificationService(SafeDbContext context, IConfiguration config)
+        {
+            _context = context;
+            _config = config;
+        }
+
+        public async Task SendInAppNotification(int userId, string message, int? alertId = null)
+        {
+            var notif = new Notification
+            {
+                Type = "InApp",
+                Message = message,
+                UserId = userId,
+                Status = "Pending"
+            };
+            _context.Notifications.Add(notif);
+            await _context.SaveChangesAsync();
+        }
+
+        public async Task SendSms(string toPhone, string message)
+        {
+            try
+            {
+                var twilioSection = _config.GetSection("Twilio");
+                var accountSid = twilioSection["AccountSid"];
+                var authToken = twilioSection["AuthToken"];
+                var fromNumber = twilioSection["From"];
+                TwilioClient.Init(accountSid, authToken);
+
+                await MessageResource.CreateAsync(
+                    body: message,
+                    from: new Twilio.Types.PhoneNumber(fromNumber),
+                    to: new Twilio.Types.PhoneNumber(toPhone)
+                );
+            }
+            catch (Exception ex)
+            {
+                // Log the error but do not throw, so alert creation does not fail
+                Console.WriteLine($"Twilio SMS send failed: {ex.Message}");
+            }
+        }
+    }
+}

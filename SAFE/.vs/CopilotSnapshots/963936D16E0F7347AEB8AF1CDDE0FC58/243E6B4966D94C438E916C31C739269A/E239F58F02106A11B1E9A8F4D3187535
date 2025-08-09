@@ -1,0 +1,456 @@
+﻿import './AdminDashboard.css';
+import { useEffect, useState } from 'react';
+import { Container, Row, Col, Card, Alert, Badge, Button, Table, Spinner, Modal, Form } from 'react-bootstrap';
+import { useNavigate } from 'react-router-dom';
+import { alertsAPI, helpRequestsAPI, incidentsAPI, notificationsAPI } from '../services/api';
+import { useAuth } from '../contexts/AuthContext';
+
+function Dashboard() {
+    const [stats, setStats] = useState({ activeAlerts: 0, helpRequests: 0, totalDonations: 0, shelters: 0 });
+    const [recentAlerts, setRecentAlerts] = useState([]);
+    const [pendingRequests, setPendingRequests] = useState([]);
+    const [notifications, setNotifications] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState('');
+    const [showReportModal, setShowReportModal] = useState(false);
+    const [reportForm, setReportForm] = useState({
+        title: '',
+        description: '',
+        incidentType: 'Medical',
+        priority: 'Medium',
+        location: '',
+        notes: ''
+    });
+    const [reportLoading, setReportLoading] = useState(false);
+    const [reportError, setReportError] = useState('');
+    const [reportSuccess, setReportSuccess] = useState('');
+    const [history, setHistory] = useState([]);
+    const [contacts, setContacts] = useState('');
+    const [showContactsModal, setShowContactsModal] = useState(false);
+    const [contactsEdit, setContactsEdit] = useState('');
+    const [contactsLoading, setContactsLoading] = useState(false);
+    const [contactsError, setContactsError] = useState('');
+    const [contactsSuccess, setContactsSuccess] = useState('');
+    const { user } = useAuth();
+    const navigate = useNavigate();
+
+    useEffect(() => {
+        fetchDashboardData();
+        fetchHistory();
+        fetchNotifications();
+        if (user) setContacts(user.emergencyContact || '');
+    }, [user]);
+
+    const fetchDashboardData = async () => {
+        setLoading(true);
+        setError('');
+        try {
+            const alerts = await alertsAPI.getAll();
+            const helpRequests = await helpRequestsAPI.getAll();
+            setStats({
+                activeAlerts: alerts.filter(a => a.status === 'Active').length,
+                helpRequests: helpRequests.length,
+                totalDonations: 15750, // Placeholder
+                shelters: 12 // Placeholder
+            });
+            setRecentAlerts(alerts.slice(0, 3).map(a => ({
+                id: a.alertId,
+                title: a.title,
+                severity: a.priority,
+                area: a.geoTargeting,
+                time: new Date(a.createdDate).toLocaleString()
+            })));
+            setPendingRequests(helpRequests.slice(0, 3).map(r => ({
+                id: r.helpRequestId,
+                type: r.type,
+                requester: r.requesterName,
+                location: r.location,
+                status: r.urgency
+            })));
+        } catch {
+            setError('Failed to load dashboard data.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const fetchHistory = async () => {
+        try {
+            const data = await incidentsAPI.getMine();
+            setHistory(data);
+        } catch {
+            setHistory([]);
+        }
+    };
+
+    const fetchNotifications = async () => {
+        try {
+            const data = await notificationsAPI.getMy();
+            setNotifications(data);
+        } catch {
+            setNotifications([]);
+        }
+    };
+
+    const handleReportChange = (e) => {
+        setReportForm({ ...reportForm, [e.target.name]: e.target.value });
+    };
+
+    const handleReportLocation = () => {
+        if (!navigator.geolocation) {
+            setReportError('Geolocation is not supported.');
+            return;
+        }
+        navigator.geolocation.getCurrentPosition(
+            (pos) => {
+                setReportForm(f => ({ ...f, location: `${pos.coords.latitude},${pos.coords.longitude}` }));
+            },
+            () => setReportError('Failed to get location.'),
+            { enableHighAccuracy: true }
+        );
+    };
+
+    const handleReportSubmit = async (e) => {
+        e.preventDefault();
+        setReportLoading(true);
+        setReportError('');
+        setReportSuccess('');
+        try {
+            await incidentsAPI.create(reportForm);
+            setReportSuccess('Emergency reported successfully!');
+            setReportForm({ title: '', description: '', incidentType: 'Medical', priority: 'Medium', location: '', notes: '' });
+            fetchHistory();
+        } catch {
+            setReportError('Failed to report emergency.');
+        } finally {
+            setReportLoading(false);
+        }
+    };
+
+    const handleContactsEdit = () => {
+        setContactsEdit(contacts);
+        setShowContactsModal(true);
+        setContactsError('');
+        setContactsSuccess('');
+    };
+
+    const handleContactsSave = async () => {
+        setContactsLoading(true);
+        setContactsError('');
+        setContactsSuccess('');
+        try {
+            // PATCH user emergency contact (assume /api/users/me)
+            await fetch('/api/users/me', {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('token')}` },
+                body: JSON.stringify({ emergencyContact: contactsEdit })
+            });
+            setContacts(contactsEdit);
+            setContactsSuccess('Emergency contact updated.');
+            setShowContactsModal(false);
+        } catch {
+            setContactsError('Failed to update emergency contact.');
+        } finally {
+            setContactsLoading(false);
+        }
+    };
+
+    const handleViewAllAlerts = () => {
+        navigate('/alerts');
+    };
+    const handleViewAllRequests = () => {
+        navigate('/help-requests');
+    };
+    const handleQuickAction = (action) => {
+        switch (action) {
+            case 'createAlert':
+                navigate('/alerts');
+                break;
+            case 'viewHelpRequests':
+                navigate('/help-requests');
+                break;
+            case 'manageDonations':
+                alert('Donation management coming soon!');
+                break;
+            case 'updateShelters':
+                alert('Shelter management coming soon!');
+                break;
+            case 'generateReport':
+                alert('Report generation coming soon!');
+                break;
+            case 'systemSettings':
+                alert('System settings coming soon!');
+                break;
+            default:
+                break;
+        }
+    };
+
+    return (
+        <Container>
+            <Row className="mb-4">
+                <Col>
+                    <h1 className="text-danger"><span className="dashboard-emoji-bounce">🚨</span>Emergency Dashboard</h1>
+                    <p className="text-muted">Real-time emergency management overview</p>
+                </Col>
+            </Row>
+            {error && <Alert variant="danger" className="dashboard-alert-interactive">{error}</Alert>}
+            {loading ? (
+                <div className="text-center my-5"><Spinner animation="border" /></div>
+            ) : (
+                <>
+                    {/* Emergency Report Form */}
+                    <Row className="mb-4">
+                        <Col>
+                            <Card className="shadow-sm mb-3 dashboard-card-interactive">
+                                <Card.Header className="bg-primary text-white d-flex justify-content-between align-items-center">
+                                    <span>Report Emergency</span>
+                                    <Button variant="light" size="sm" className="dashboard-btn-animated" onClick={() => setShowReportModal(true)}>
+                                        New Report
+                                    </Button>
+                                </Card.Header>
+                                <Card.Body>
+                                    <Form onSubmit={handleReportSubmit}>
+                                        <Row>
+                                            <Col md={6}>
+                                                <Form.Group className="mb-3">
+                                                    <Form.Label>Title</Form.Label>
+                                                    <Form.Control name="title" value={reportForm.title} onChange={handleReportChange} required />
+                                                </Form.Group>
+                                            </Col>
+                                            <Col md={6}>
+                                                <Form.Group className="mb-3">
+                                                    <Form.Label>Type</Form.Label>
+                                                    <Form.Select name="incidentType" value={reportForm.incidentType} onChange={handleReportChange} required>
+                                                        <option value="Fire">Fire</option>
+                                                        <option value="Flood">Flood</option>
+                                                        <option value="Medical">Medical</option>
+                                                        <option value="Accident">Accident</option>
+                                                        <option value="Other">Other</option>
+                                                    </Form.Select>
+                                                </Form.Group>
+                                            </Col>
+                                        </Row>
+                                        <Form.Group className="mb-3">
+                                            <Form.Label>Description</Form.Label>
+                                            <Form.Control as="textarea" name="description" value={reportForm.description} onChange={handleReportChange} required />
+                                        </Form.Group>
+                                        <Row>
+                                            <Col md={6}>
+                                                <Form.Group className="mb-3">
+                                                    <Form.Label>Priority</Form.Label>
+                                                    <Form.Select name="priority" value={reportForm.priority} onChange={handleReportChange} required>
+                                                        <option value="Low">Low</option>
+                                                        <option value="Medium">Medium</option>
+                                                        <option value="High">High</option>
+                                                    </Form.Select>
+                                                </Form.Group>
+                                            </Col>
+                                            <Col md={6}>
+                                                <Form.Group className="mb-3">
+                                                    <Form.Label>Location</Form.Label>
+                                                    <div className="d-flex gap-2">
+                                                        <Form.Control name="location" value={reportForm.location} onChange={handleReportChange} placeholder="lat,long or address" required />
+                                                        <Button variant="outline-secondary" size="sm" onClick={handleReportLocation} type="button">Auto</Button>
+                                                    </div>
+                                                </Form.Group>
+                                            </Col>
+                                        </Row>
+                                        <Form.Group className="mb-3">
+                                            <Form.Label>Notes</Form.Label>
+                                            <Form.Control as="textarea" name="notes" value={reportForm.notes} onChange={handleReportChange} />
+                                        </Form.Group>
+                                        {reportError && <Alert variant="danger">{reportError}</Alert>}
+                                        {reportSuccess && <Alert variant="success">{reportSuccess}</Alert>}
+                                        <Button type="submit" variant="primary" className="dashboard-btn-animated" disabled={reportLoading}>
+                                            {reportLoading ? 'Reporting...' : 'Submit Report'}
+                                        </Button>
+                                    </Form>
+                                </Card.Body>
+                            </Card>
+                        </Col>
+                    </Row>
+                    {/* Emergency History */}
+                    <Row className="mb-4">
+                        <Col>
+                            <Card className="shadow-sm dashboard-card-interactive">
+                                <Card.Header className="bg-info text-white">My Emergency History</Card.Header>
+                                <Card.Body>
+                                    <Table responsive hover size="sm">
+                                        <thead>
+                                            <tr>
+                                                <th>Title</th>
+                                                <th>Type</th>
+                                                <th>Status</th>
+                                                <th>Priority</th>
+                                                <th>Location</th>
+                                                <th>Date</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {history.map(incident => (
+                                                <tr key={incident.incidentId}>
+                                                    <td>{incident.title}</td>
+                                                    <td>{incident.incidentType}</td>
+                                                    <td>{incident.status}</td>
+                                                    <td>{incident.priority}</td>
+                                                    <td>{incident.location}</td>
+                                                    <td>{new Date(incident.createdDate).toLocaleString()}</td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </Table>
+                                </Card.Body>
+                            </Card>
+                        </Col>
+                    </Row>
+                    {/* Emergency Contacts */}
+                    <Row className="mb-4">
+                        <Col>
+                            <Card className="shadow-sm dashboard-card-interactive">
+                                <Card.Header className="bg-warning text-dark d-flex justify-content-between align-items-center">
+                                    <span>My Emergency Contacts</span>
+                                    <Button variant="outline-dark" size="sm" className="dashboard-btn-animated" onClick={handleContactsEdit}>Edit</Button>
+                                </Card.Header>
+                                <Card.Body>
+                                    <div>{contacts || <span className="text-muted">No emergency contact set.</span>}</div>
+                                </Card.Body>
+                            </Card>
+                        </Col>
+                    </Row>
+                    {/* Statistics Cards */}
+                    <Row className="mb-4">
+                        <Col md={3} className="mb-3">
+                            <Card className="text-center h-100 shadow-sm border-danger dashboard-card-interactive">
+                                <Card.Body>
+                                    <div className="text-danger mb-2">⚠️</div>
+                                    <Card.Title className="h2 text-danger">{stats.activeAlerts}</Card.Title>
+                                    <Card.Text className="text-muted">Active Alerts</Card.Text>
+                                </Card.Body>
+                            </Card>
+                        </Col>
+                        <Col md={3} className="mb-3">
+                            <Card className="text-center h-100 shadow-sm border-primary dashboard-card-interactive">
+                                <Card.Body>
+                                    <div className="text-primary mb-2">👍</div>
+                                    <Card.Title className="h2 text-primary">{stats.helpRequests}</Card.Title>
+                                    <Card.Text className="text-muted">Help Requests</Card.Text>
+                                </Card.Body>
+                            </Card>
+                        </Col>
+                        <Col md={3} className="mb-3">
+                            <Card className="text-center h-100 shadow-sm border-success dashboard-card-interactive">
+                                <Card.Body>
+                                    <div className="text-success mb-2">💰</div>
+                                    <Card.Title className="h2 text-success">${stats.totalDonations.toLocaleString()}</Card.Title>
+                                    <Card.Text className="text-muted">Total Donations</Card.Text>
+                                </Card.Body>
+                            </Card>
+                        </Col>
+                        <Col md={3} className="mb-3">
+                            <Card className="text-center h-100 shadow-sm border-warning dashboard-card-interactive">
+                                <Card.Body>
+                                    <div className="text-warning mb-2">🏠</div>
+                                    <Card.Title className="h2 text-warning">{stats.shelters}</Card.Title>
+                                    <Card.Text className="text-muted">Active Shelters</Card.Text>
+                                </Card.Body>
+                            </Card>
+                        </Col>
+                    </Row>
+                    <Row>
+                        {/* Recent Alerts */}
+                        <Col lg={6} className="mb-4">
+                            <Card className="shadow-sm dashboard-card-interactive">
+                                <Card.Header className="bg-danger text-white">
+                                    <h5 className="mb-0">Recent Alerts</h5>
+                                </Card.Header>
+                                <Card.Body>
+                                    {recentAlerts.map(alert => (
+                                        <Alert key={alert.id} variant={alert.severity === 'High' ? 'danger' : alert.severity === 'Medium' ? 'warning' : 'info'} className="mb-2 dashboard-alert-interactive">
+                                            <div className="d-flex justify-content-between align-items-start">
+                                                <div>
+                                                    <strong>{alert.title}</strong>
+                                                    <br />
+                                                    <small>Area: {alert.area}</small>
+                                                </div>
+                                                <div className="text-end">
+                                                    <Badge bg={alert.severity === 'High' ? 'danger' : alert.severity === 'Medium' ? 'warning' : 'secondary'}>
+                                                        {alert.severity}
+                                                    </Badge>
+                                                    <br />
+                                                    <small className="text-muted">{alert.time}</small>
+                                                </div>
+                                            </div>
+                                        </Alert>
+                                    ))}
+                                    <div className="text-center">
+                                        <Button variant="outline-danger" size="sm" className="dashboard-btn-animated" onClick={handleViewAllAlerts}>View All Alerts</Button>
+                                    </div>
+                                </Card.Body>
+                            </Card>
+                        </Col>
+                        {/* Pending Help Requests - Only for Admin */}
+                        {user && user.role === 'Admin' && (
+                            <Col lg={6} className="mb-4">
+                                <Card className="shadow-sm dashboard-card-interactive">
+                                    <Card.Header className="bg-primary text-white">
+                                        <h5 className="mb-0">Pending Help Requests</h5>
+                                    </Card.Header>
+                                    <Card.Body>
+                                        <Table responsive size="sm">
+                                            <thead>
+                                                <tr>
+                                                    <th>Type</th>
+                                                    <th>Requester</th>
+                                                    <th>Location</th>
+                                                    <th>Status</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {pendingRequests.map(request => (
+                                                    <tr key={request.id}>
+                                                        <td>{request.type}</td>
+                                                        <td>{request.requester}</td>
+                                                        <td>{request.location}</td>
+                                                        <td>
+                                                            <Badge bg={request.status === 'High' ? 'danger' : request.status === 'Medium' ? 'warning' : 'success'}>
+                                                                {request.status}
+                                                            </Badge>
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </Table>
+                                        <div className="text-center">
+                                            <Button variant="outline-primary" size="sm" className="dashboard-btn-animated" onClick={handleViewAllRequests}>View All Requests</Button>
+                                        </div>
+                                    </Card.Body>
+                                </Card>
+                            </Col>
+                        )}
+                    </Row>
+                </>
+            )}
+            {/* Emergency Contacts Modal */}
+            <Modal show={showContactsModal} onHide={() => setShowContactsModal(false)}>
+                <Modal.Header closeButton>
+                    <Modal.Title>Edit Emergency Contact</Modal.Title>
+                </Modal.Header>
+                <Modal.Body>
+                    <Form.Group>
+                        <Form.Label>Emergency Contact</Form.Label>
+                        <Form.Control as="textarea" rows={2} value={contactsEdit} onChange={e => setContactsEdit(e.target.value)} />
+                    </Form.Group>
+                    {contactsError && <Alert variant="danger" className="mt-2 dashboard-alert-interactive">{contactsError}</Alert>}
+                    {contactsSuccess && <Alert variant="success" className="mt-2 dashboard-alert-interactive">{contactsSuccess}</Alert>}
+                </Modal.Body>
+                <Modal.Footer>
+                    <Button variant="secondary" className="dashboard-btn-animated" onClick={() => setShowContactsModal(false)}>Cancel</Button>
+                    <Button variant="primary" className="dashboard-btn-animated" onClick={handleContactsSave} disabled={contactsLoading}>Save</Button>
+                </Modal.Footer>
+            </Modal>
+        </Container>
+    );
+}
+
+export default Dashboard;

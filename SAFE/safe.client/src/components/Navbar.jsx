@@ -2,6 +2,7 @@ import { Navbar as BSNavbar, Nav, Container, NavDropdown } from 'react-bootstrap
 import { LinkContainer } from 'react-router-bootstrap';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import { useEffect } from 'react';
 
 function Navbar() {
     const { user, isAuthenticated, logout } = useAuth();
@@ -11,6 +12,51 @@ function Navbar() {
         logout();
         navigate('/');
     };
+
+    useEffect(() => {
+        const handleCreateAlert = () => {
+            if (window.location.pathname === '/admin') {
+                window.dispatchEvent(new CustomEvent('open-admin-create-alert'));
+            } else {
+                navigate('/admin');
+                setTimeout(() => window.dispatchEvent(new CustomEvent('open-admin-create-alert')), 100);
+            }
+        };
+        const handleEmergencyReview = () => {
+            if (window.location.pathname === '/admin') {
+                window.dispatchEvent(new CustomEvent('open-admin-emergency-review'));
+            } else {
+                navigate('/admin');
+                setTimeout(() => window.dispatchEvent(new CustomEvent('open-admin-emergency-review')), 100);
+            }
+        };
+        const handleDonationTracking = () => {
+            if (window.location.pathname === '/admin') {
+                window.dispatchEvent(new CustomEvent('open-admin-donation-tracking'));
+            } else {
+                navigate('/admin');
+                setTimeout(() => window.dispatchEvent(new CustomEvent('open-admin-donation-tracking')), 100);
+            }
+        };
+        const handleViewAlerts = () => {
+            if (window.location.pathname === '/admin') {
+                window.dispatchEvent(new CustomEvent('open-admin-view-alerts'));
+            } else {
+                navigate('/admin');
+                setTimeout(() => window.dispatchEvent(new CustomEvent('open-admin-view-alerts')), 100);
+            }
+        };
+        window.handleCreateAlert = handleCreateAlert;
+        window.handleEmergencyReview = handleEmergencyReview;
+        window.handleDonationTracking = handleDonationTracking;
+        window.handleViewAlerts = handleViewAlerts;
+        return () => {
+            delete window.handleCreateAlert;
+            delete window.handleEmergencyReview;
+            delete window.handleDonationTracking;
+            delete window.handleViewAlerts;
+        };
+    }, [navigate]);
 
     return (
         <BSNavbar bg="danger" variant="dark" expand="lg" sticky="top">
@@ -25,19 +71,42 @@ function Navbar() {
                 <BSNavbar.Toggle aria-controls="basic-navbar-nav" />
                 <BSNavbar.Collapse id="basic-navbar-nav">
                     <Nav className="me-auto">
-                        <LinkContainer to="/">
-                            <Nav.Link>Home</Nav.Link>
-                        </LinkContainer>
-                        <LinkContainer to="/alerts">
-                            <Nav.Link>Alerts</Nav.Link>
-                        </LinkContainer>
-                        {isAuthenticated() && (
+                        {user?.role === 'Admin' && isAuthenticated() ? (
                             <>
-                                <LinkContainer to="/help-requests">
-                                    <Nav.Link>Help Requests</Nav.Link>
+                                <LinkContainer to="/admin">
+                                    <Nav.Link>Admin Dashboard</Nav.Link>
                                 </LinkContainer>
-                                <LinkContainer to="/dashboard">
-                                    <Nav.Link>Dashboard</Nav.Link>
+                                <Nav.Link onClick={() => window.handleCreateAlert()}>Create Alert</Nav.Link>
+                                <Nav.Link onClick={() => window.handleEmergencyReview()}>Emergency Review Dashboard</Nav.Link>
+                                <Nav.Link onClick={() => window.handleDonationTracking()}>Donation Tracking</Nav.Link>
+                                <Nav.Link onClick={() => window.handleViewAlerts()}>View Alerts</Nav.Link>
+                            </>
+                        ) : (
+                            <>
+                                <LinkContainer to="/">
+                                    <Nav.Link>Home</Nav.Link>
+                                </LinkContainer>
+                                <LinkContainer to="/alerts">
+                                    <Nav.Link>Alerts</Nav.Link>
+                                </LinkContainer>
+                                <LinkContainer to="/notifications">
+                                    <Nav.Link>Notifications</Nav.Link>
+                                </LinkContainer>
+                                {isAuthenticated() && (
+                                    <>
+                                        <LinkContainer to="/help-requests">
+                                            <Nav.Link>Help Requests</Nav.Link>
+                                        </LinkContainer>
+                                        <LinkContainer to="/dashboard">
+                                            <Nav.Link>Dashboard</Nav.Link>
+                                        </LinkContainer>
+                                    </>
+                                )}
+                                <LinkContainer to="/donate">
+                                    <Nav.Link>Donate</Nav.Link>
+                                </LinkContainer>
+                                <LinkContainer to="/emergency-contact">
+                                    <Nav.Link>Emergency Contact</Nav.Link>
                                 </LinkContainer>
                             </>
                         )}

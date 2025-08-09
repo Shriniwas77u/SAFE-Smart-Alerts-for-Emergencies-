@@ -1,0 +1,125 @@
+import { useState } from 'react';
+import { Container, Row, Col, Card, Form, Button, Alert, Spinner } from 'react-bootstrap';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
+
+function AdminLogin() {
+    const [formData, setFormData] = useState({
+        email: '',
+        password: ''
+    });
+    const [error, setError] = useState('');
+    const [loading, setLoading] = useState(false);
+    const { login } = useAuth();
+    const navigate = useNavigate();
+
+    const handleChange = (e) => {
+        setFormData({
+            ...formData,
+            [e.target.name]: e.target.value
+        });
+    };
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        setError('');
+        setLoading(true);
+        try {
+            const result = await login(formData.email, formData.password);
+            if (result.success) {
+                const user = JSON.parse(localStorage.getItem('user'));
+                if (user && user.role === 'Admin') {
+                    navigate('/admin-dashboard');
+                } else {
+                    setError('You are not authorized as admin.');
+                }
+            } else {
+                setError(result.message);
+            }
+        } catch {
+            setError('An unexpected error occurred. Please try again.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    return (
+        <Container>
+            <Row className="mb-4">
+                <Col>
+                    <h1 className="text-danger">Admin Login</h1>
+                    <p className="text-muted">Admin access only</p>
+                </Col>
+            </Row>
+            <Row>
+                <Col md={6} lg={5} className="offset-md-3 offset-lg-3">
+                    <Card className="shadow-sm">
+                        <Card.Body className="p-4 login-form">
+                            <div className="text-center mb-4">
+                                <h3 className="text-danger">Admin Sign In</h3>
+                                <p className="text-muted">Enter your admin credentials</p>
+                            </div>
+                            {error && <Alert variant="danger">{error}</Alert>}
+                            <Form onSubmit={handleSubmit} aria-label="Admin login form">
+                                <Form.Group className="mb-3" controlId="adminLoginEmail">
+                                    <Form.Label htmlFor="adminLoginEmail">Email Address</Form.Label>
+                                    <Form.Control
+                                        type="email"
+                                        id="adminLoginEmail"
+                                        name="email"
+                                        value={formData.email}
+                                        onChange={handleChange}
+                                        placeholder="Enter admin email"
+                                        required
+                                        autoComplete="email"
+                                        title="Email address"
+                                    />
+                                </Form.Group>
+                                <Form.Group className="mb-3" controlId="adminLoginPassword">
+                                    <Form.Label htmlFor="adminLoginPassword">Password</Form.Label>
+                                    <Form.Control
+                                        type="password"
+                                        id="adminLoginPassword"
+                                        name="password"
+                                        value={formData.password}
+                                        onChange={handleChange}
+                                        placeholder="Enter admin password"
+                                        required
+                                        autoComplete="current-password"
+                                        title="Password"
+                                    />
+                                </Form.Group>
+                                <Button
+                                    type="submit"
+                                    variant="danger"
+                                    size="lg"
+                                    className="w-100 mb-3"
+                                    disabled={loading}
+                                    aria-label="Admin Login"
+                                >
+                                    {loading ? (
+                                        <>
+                                            <Spinner
+                                                as="span"
+                                                animation="border"
+                                                size="sm"
+                                                role="status"
+                                                aria-hidden="true"
+                                                className="me-2"
+                                            />
+                                            Logging in...
+                                        </>
+                                    ) : (
+                                        'Login as Admin'
+                                    )}
+                                </Button>
+                            </Form>
+                        </Card.Body>
+                    </Card>
+                </Col>
+            </Row>
+        </Container>
+    );
+}
+
+export default AdminLogin;

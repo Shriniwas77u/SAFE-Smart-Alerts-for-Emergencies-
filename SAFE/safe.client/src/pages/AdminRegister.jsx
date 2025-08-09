@@ -1,0 +1,155 @@
+import { useState } from 'react';
+import { Container, Row, Col, Card, Form, Button, Alert, Spinner } from 'react-bootstrap';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
+
+function AdminRegister() {
+    const [formData, setFormData] = useState({
+        email: '',
+        password: '',
+        firstName: '',
+        lastName: '',
+        phoneNumber: '',
+        role: 'Admin'
+    });
+    const [error, setError] = useState('');
+    const [success, setSuccess] = useState('');
+    const [loading, setLoading] = useState(false);
+    const { register } = useAuth();
+    const navigate = useNavigate();
+
+    const handleChange = (e) => {
+        setFormData({
+            ...formData,
+            [e.target.name]: e.target.value
+        });
+    };
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        setError('');
+        setSuccess('');
+        setLoading(true);
+        try {
+            const result = await register(formData);
+            if (result.success) {
+                setSuccess('Admin registered successfully! You can now log in.');
+                setTimeout(() => navigate('/admin-login'), 1500);
+            } else {
+                setError(result.message);
+            }
+        } catch {
+            setError('An unexpected error occurred. Please try again.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    return (
+        <Container>
+            <Row className="mb-4">
+                <Col>
+                    <h1 className="text-danger">Admin Registration</h1>
+                    <p className="text-muted">Create a new admin account</p>
+                </Col>
+            </Row>
+            <Row>
+                <Col md={6} lg={5} className="offset-md-3 offset-lg-3">
+                    <Card className="shadow-sm">
+                        <Card.Body className="p-4 login-form">
+                            <div className="text-center mb-4">
+                                <h3 className="text-danger">Register Admin</h3>
+                                <p className="text-muted">Fill in admin details</p>
+                            </div>
+                            {error && <Alert variant="danger">{error}</Alert>}
+                            {success && <Alert variant="success">{success}</Alert>}
+                            <Form onSubmit={handleSubmit} aria-label="Admin registration form">
+                                <Form.Group className="mb-3" controlId="adminRegisterEmail">
+                                    <Form.Label>Email Address</Form.Label>
+                                    <Form.Control
+                                        type="email"
+                                        name="email"
+                                        value={formData.email}
+                                        onChange={handleChange}
+                                        placeholder="Enter admin email"
+                                        required
+                                    />
+                                </Form.Group>
+                                <Form.Group className="mb-3" controlId="adminRegisterPassword">
+                                    <Form.Label>Password</Form.Label>
+                                    <Form.Control
+                                        type="password"
+                                        name="password"
+                                        value={formData.password}
+                                        onChange={handleChange}
+                                        placeholder="Enter password"
+                                        required
+                                    />
+                                </Form.Group>
+                                <Form.Group className="mb-3" controlId="adminRegisterFirstName">
+                                    <Form.Label>First Name</Form.Label>
+                                    <Form.Control
+                                        type="text"
+                                        name="firstName"
+                                        value={formData.firstName}
+                                        onChange={handleChange}
+                                        placeholder="First name"
+                                        required
+                                    />
+                                </Form.Group>
+                                <Form.Group className="mb-3" controlId="adminRegisterLastName">
+                                    <Form.Label>Last Name</Form.Label>
+                                    <Form.Control
+                                        type="text"
+                                        name="lastName"
+                                        value={formData.lastName}
+                                        onChange={handleChange}
+                                        placeholder="Last name"
+                                        required
+                                    />
+                                </Form.Group>
+                                <Form.Group className="mb-3" controlId="adminRegisterPhone">
+                                    <Form.Label>Phone Number</Form.Label>
+                                    <Form.Control
+                                        type="text"
+                                        name="phoneNumber"
+                                        value={formData.phoneNumber}
+                                        onChange={handleChange}
+                                        placeholder="Phone number"
+                                        required
+                                    />
+                                </Form.Group>
+                                <Button
+                                    type="submit"
+                                    variant="danger"
+                                    size="lg"
+                                    className="w-100 mb-3"
+                                    disabled={loading}
+                                    aria-label="Register Admin"
+                                >
+                                    {loading ? (
+                                        <>
+                                            <Spinner
+                                                as="span"
+                                                animation="border"
+                                                size="sm"
+                                                role="status"
+                                                aria-hidden="true"
+                                                className="me-2"
+                                            />
+                                            Registering...
+                                        </>
+                                    ) : (
+                                        'Register as Admin'
+                                    )}
+                                </Button>
+                            </Form>
+                        </Card.Body>
+                    </Card>
+                </Col>
+            </Row>
+        </Container>
+    );
+}
+
+export default AdminRegister;

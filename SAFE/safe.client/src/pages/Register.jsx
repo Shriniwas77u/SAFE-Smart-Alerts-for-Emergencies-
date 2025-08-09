@@ -9,14 +9,23 @@ function Register() {
         lastName: '',
         email: '',
         phoneNumber: '',
+        address: '', // new field
         password: '',
         confirmPassword: '',
         role: 'User'
     });
+    const [errors, setErrors] = useState({
+        firstName: '',
+        lastName: '',
+        email: '',
+        phoneNumber: '',
+        address: '', // new field
+        password: '',
+        confirmPassword: ''
+    });
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
     const [loading, setLoading] = useState(false);
-
     const { register, isAuthenticated } = useAuth();
     const navigate = useNavigate();
 
@@ -27,35 +36,130 @@ function Register() {
         }
     }, [isAuthenticated, navigate]);
 
+    const validateForm = () => {
+        let valid = true;
+        const newErrors = { ...errors };
+
+        // First Name validation
+        if (!formData.firstName.trim()) {
+            newErrors.firstName = 'First name is required';
+            valid = false;
+        } else if (formData.firstName.length < 2) {
+            newErrors.firstName = 'First name must be at least 2 characters';
+            valid = false;
+        } else {
+            newErrors.firstName = '';
+        }
+
+        // Last Name validation
+        if (!formData.lastName.trim()) {
+            newErrors.lastName = 'Last name is required';
+            valid = false;
+        } else if (formData.lastName.length < 2) {
+            newErrors.lastName = 'Last name must be at least 2 characters';
+            valid = false;
+        } else {
+            newErrors.lastName = '';
+        }
+
+        // Email validation
+        if (!formData.email.trim()) {
+            newErrors.email = 'Email is required';
+            valid = false;
+        } else if (!/^[^\s@]+@(gmail\.com|outlook\.com|yahoo\.com)$/.test(formData.email)) {
+            newErrors.email = 'Email must be valid and end with @gmail.com, @outlook.com, or @yahoo.com';
+            valid = false;
+        } else {
+            newErrors.email = '';
+        }
+
+        // Phone Number validation
+        if (!formData.phoneNumber.trim()) {
+            newErrors.phoneNumber = 'Phone number is required';
+            valid = false;
+        } else if (!/^\d{10}$/.test(formData.phoneNumber.replace(/\D/g, ''))) {
+            newErrors.phoneNumber = 'Please enter a valid 10-digit phone number';
+            valid = false;
+        } else {
+            newErrors.phoneNumber = '';
+        }
+
+        // Address validation
+        if (!formData.address.trim()) {
+            newErrors.address = 'Address is required';
+            valid = false;
+        } else {
+            newErrors.address = '';
+        }
+
+        // Password validation
+        if (!formData.password) {
+            newErrors.password = 'Password is required';
+            valid = false;
+        } else if (formData.password.length < 8) {
+            newErrors.password = 'Password must be at least 8 characters';
+            valid = false;
+        } else if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(formData.password)) {
+            newErrors.password = 'Password must contain at least one uppercase letter, one lowercase letter, and one number';
+            valid = false;
+        } else {
+            newErrors.password = '';
+        }
+
+        // Confirm Password validation
+        if (!formData.confirmPassword) {
+            newErrors.confirmPassword = 'Please confirm your password';
+            valid = false;
+        } else if (formData.password !== formData.confirmPassword) {
+            newErrors.confirmPassword = 'Passwords do not match';
+            valid = false;
+        } else {
+            newErrors.confirmPassword = '';
+        }
+
+        setErrors(newErrors);
+        return valid;
+    };
+
     const handleChange = (e) => {
+        const { name, value } = e.target;
         setFormData({
             ...formData,
-            [e.target.name]: e.target.value
+            [name]: value
         });
+
+        // Clear error when user starts typing
+        if (errors[name]) {
+            setErrors({
+                ...errors,
+                [name]: ''
+            });
+        }
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError('');
         setSuccess('');
-        setLoading(true);
-        
-        if (formData.password !== formData.confirmPassword) {
-            setError('Passwords do not match');
-            setLoading(false);
+
+        if (!validateForm()) {
+            setError('Please fix the errors in the form');
             return;
         }
-        
+
+        setLoading(true);
+
         try {
             const result = await register({
                 firstName: formData.firstName,
                 lastName: formData.lastName,
                 email: formData.email,
                 phoneNumber: formData.phoneNumber,
+                address: formData.address, // include address in registration
                 password: formData.password,
                 role: formData.role
             });
-            
+
             if (result.success) {
                 setSuccess(result.message + ' Please login to continue.');
                 // Clear form
@@ -64,6 +168,7 @@ function Register() {
                     lastName: '',
                     email: '',
                     phoneNumber: '',
+                    address: '', // clear address field
                     password: '',
                     confirmPassword: '',
                     role: 'User'
@@ -86,7 +191,7 @@ function Register() {
                     <p className="text-muted">Create your emergency portal account</p>
                 </Col>
             </Row>
-            
+
             <Row>
                 <Col md={8} lg={6} className="offset-md-2 offset-lg-3">
                     <Card className="shadow-sm">
@@ -95,10 +200,10 @@ function Register() {
                                 <h3 className="text-danger">Create Account</h3>
                                 <p className="text-muted">Join the SAFE network</p>
                             </div>
-                            
+
                             {error && <Alert variant="danger">{error}</Alert>}
                             {success && <Alert variant="success">{success}</Alert>}
-                            
+
                             <Form onSubmit={handleSubmit}>
                                 <Row>
                                     <Col md={6}>
@@ -111,7 +216,11 @@ function Register() {
                                                 onChange={handleChange}
                                                 placeholder="Enter first name"
                                                 required
+                                                isInvalid={!!errors.firstName}
                                             />
+                                            <Form.Control.Feedback type="invalid">
+                                                {errors.firstName}
+                                            </Form.Control.Feedback>
                                         </Form.Group>
                                     </Col>
                                     <Col md={6}>
@@ -124,11 +233,15 @@ function Register() {
                                                 onChange={handleChange}
                                                 placeholder="Enter last name"
                                                 required
+                                                isInvalid={!!errors.lastName}
                                             />
+                                            <Form.Control.Feedback type="invalid">
+                                                {errors.lastName}
+                                            </Form.Control.Feedback>
                                         </Form.Group>
                                     </Col>
                                 </Row>
-                                
+
                                 <Form.Group className="mb-3">
                                     <Form.Label>Email Address</Form.Label>
                                     <Form.Control
@@ -136,11 +249,16 @@ function Register() {
                                         name="email"
                                         value={formData.email}
                                         onChange={handleChange}
-                                        placeholder="Enter your email"
+                                        placeholder="Enter your email address"
                                         required
+                                        isInvalid={!!errors.email}
                                     />
+                                    <Form.Control.Feedback type="invalid">
+                                        {errors.email}
+                                    </Form.Control.Feedback>
+                                   
                                 </Form.Group>
-                                
+
                                 <Form.Group className="mb-3">
                                     <Form.Label>Phone Number</Form.Label>
                                     <Form.Control
@@ -150,9 +268,29 @@ function Register() {
                                         onChange={handleChange}
                                         placeholder="Enter your phone number"
                                         required
+                                        isInvalid={!!errors.phoneNumber}
                                     />
+                                    <Form.Control.Feedback type="invalid">
+                                        {errors.phoneNumber}
+                                    </Form.Control.Feedback>
                                 </Form.Group>
-                                
+
+                                <Form.Group className="mb-3">
+                                    <Form.Label>Address/Location</Form.Label>
+                                    <Form.Control
+                                        type="text"
+                                        name="address"
+                                        value={formData.address}
+                                        onChange={handleChange}
+                                        placeholder="Enter your address or location"
+                                        required
+                                        isInvalid={!!errors.address}
+                                    />
+                                    <Form.Control.Feedback type="invalid">
+                                        {errors.address}
+                                    </Form.Control.Feedback>
+                                </Form.Group>
+
                                 <Form.Group className="mb-3">
                                     <Form.Label>Role</Form.Label>
                                     <Form.Select
@@ -163,10 +301,10 @@ function Register() {
                                     >
                                         <option value="User">User/Victim</option>
                                         <option value="Donor">Donor</option>
-                                        <option value="Responder">Emergency Responder</option>
+                                        
                                     </Form.Select>
                                 </Form.Group>
-                                
+
                                 <Row>
                                     <Col md={6}>
                                         <Form.Group className="mb-3">
@@ -178,7 +316,14 @@ function Register() {
                                                 onChange={handleChange}
                                                 placeholder="Enter password"
                                                 required
+                                                isInvalid={!!errors.password}
                                             />
+                                            <Form.Control.Feedback type="invalid">
+                                                {errors.password}
+                                            </Form.Control.Feedback>
+                                            <Form.Text className="text-muted">
+                                                Must be at least 8 characters with uppercase, lowercase, and number
+                                            </Form.Text>
                                         </Form.Group>
                                     </Col>
                                     <Col md={6}>
@@ -191,11 +336,15 @@ function Register() {
                                                 onChange={handleChange}
                                                 placeholder="Confirm password"
                                                 required
+                                                isInvalid={!!errors.confirmPassword}
                                             />
+                                            <Form.Control.Feedback type="invalid">
+                                                {errors.confirmPassword}
+                                            </Form.Control.Feedback>
                                         </Form.Group>
                                     </Col>
                                 </Row>
-                                
+
                                 <div className="mb-3">
                                     <Form.Check
                                         type="checkbox"
@@ -203,11 +352,11 @@ function Register() {
                                         required
                                     />
                                 </div>
-                                
-                                <Button 
-                                    type="submit" 
-                                    variant="danger" 
-                                    size="lg" 
+
+                                <Button
+                                    type="submit"
+                                    variant="danger"
+                                    size="lg"
                                     className="w-100 mb-3"
                                     disabled={loading}
                                 >
@@ -227,7 +376,7 @@ function Register() {
                                         'Register'
                                     )}
                                 </Button>
-                                
+
                                 <div className="text-center">
                                     <Link to="/login" className="text-decoration-none">
                                         Already have an account? Login here

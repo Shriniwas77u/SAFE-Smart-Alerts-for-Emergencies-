@@ -1,0 +1,60 @@
+﻿import { Container, Row, Col, Card, Button, Alert, Table } from 'react-bootstrap';
+// ...existing imports...
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
+
+// ...existing code...
+
+function EmergencyContact() {
+    // Static Maharashtra emergency contacts
+    const contacts = [
+        { type: 'Police', number: '100', location: 'Maharashtra State' },
+        { type: 'Fire', number: '101', location: 'Maharashtra State' },
+        { type: 'Ambulance', number: '108', location: 'Maharashtra State' },
+        { type: 'Disaster Management', number: '1077', location: 'Maharashtra State' },
+        { type: 'Women Helpline', number: '1091', location: 'Maharashtra State' },
+        { type: 'Child Helpline', number: '1098', location: 'Maharashtra State' },
+        { type: 'Mumbai Police', number: '022-22621855', location: 'Mumbai' },
+        { type: 'Pune Police', number: '020-26126296', location: 'Pune' },
+        { type: 'Nagpur Police', number: '0712-2561222', location: 'Nagpur' },
+        { type: 'Thane Fire Brigade', number: '022-25343000', location: 'Thane' },
+    ];
+    return (
+        <Container className="py-5">
+            <Row className="mb-4">
+                <Col>
+                    <h2 className="text-danger">Emergency Contacts - Maharashtra</h2>
+                    <p className="text-muted">Important helpline numbers for emergencies in Maharashtra.</p>
+                </Col>
+            </Row>
+            <Row>
+                <Col md={8} className="mx-auto">
+                    <Card className="shadow-sm">
+                        <Card.Body>
+                            <Table striped bordered hover responsive>
+                                <thead>
+                                    <tr>
+                                        <th>Type</th>
+                                        <th>Number</th>
+                                        <th>Location</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {contacts.map((c, idx) => (
+                                        <tr key={idx}>
+                                            <td>{c.type}</td>
+                                            <td>{c.number}</td>
+                                            <td>{c.location}</td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </Table>
+                        </Card.Body>
+                    </Card>
+                </Col>
+            </Row>
+        </Container>
+    );
+}
+
+export default EmergencyContact;

@@ -1,0 +1,57 @@
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using SAFE.Server.Data;
+
+namespace SAFE.Server.Controllers
+{
+    [ApiController]
+    [Route("api/[controller]")]
+    [Authorize(Roles = "Admin")]
+    public class AdminController : ControllerBase
+    {
+        private readonly SafeDbContext _context;
+        public AdminController(SafeDbContext context)
+        {
+            _context = context;
+        }
+
+        [HttpGet("dashboard-summary")]
+        public async Task<IActionResult> GetDashboardSummary()
+        {
+            var userCount = await _context.Users.CountAsync();
+            var alertCount = await _context.Alerts.CountAsync();
+            var helpRequestCount = await _context.HelpRequests.CountAsync();
+            var incidentCount = await _context.Incidents.CountAsync();
+
+            var recentAlerts = await _context.Alerts
+                .OrderByDescending(a => a.CreatedDate)
+                .Take(5)
+                .Select(a => new { a.AlertId, a.Title, a.Status, a.CreatedDate })
+                .ToListAsync();
+
+            var recentHelpRequests = await _context.HelpRequests
+                .OrderByDescending(h => h.CreatedDate)
+                .Take(5)
+                .Select(h => new { h.HelpRequestId, h.Type, h.Status, h.CreatedDate })
+                .ToListAsync();
+
+            var recentIncidents = await _context.Incidents
+                .OrderByDescending(i => i.CreatedDate)
+                .Take(5)
+                .Select(i => new { i.IncidentId, i.Title, i.Status, i.CreatedDate })
+                .ToListAsync();
+
+            return Ok(new
+            {
+                userCount,
+                alertCount,
+                helpRequestCount,
+                incidentCount,
+                recentAlerts,
+                recentHelpRequests,
+                recentIncidents
+            });
+        }
+    }
+}

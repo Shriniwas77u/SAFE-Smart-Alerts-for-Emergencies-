@@ -1,0 +1,17 @@
+using System.ComponentModel.DataAnnotations;
+
+namespace SAFE.Server.Models
+{
+    public class ResponseTeam
+    {
+        public int ResponseTeamId { get; set; }
+        [Required]
+        public string Name { get; set; } = string.Empty;
+        [Required]
+        public string EmergencyType { get; set; } = string.Empty; // Fire, Flood, Medical, etc.
+        public string Region { get; set; } = string.Empty; // e.g. "Downtown", "North District"
+        public string ContactPhone { get; set; } = string.Empty;
+        public string ContactEmail { get; set; } = string.Empty;
+        public string CoverageZone { get; set; } = string.Empty; // e.g. geojson or description
+    }
+}

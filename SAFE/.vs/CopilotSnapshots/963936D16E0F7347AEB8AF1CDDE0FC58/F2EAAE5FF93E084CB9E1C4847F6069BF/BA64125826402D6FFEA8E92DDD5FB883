@@ -1,0 +1,47 @@
+﻿using System;
+using Microsoft.EntityFrameworkCore.Migrations;
+
+#nullable disable
+
+namespace SAFE.Server.Migrations
+{
+    /// <inheritdoc />
+    public partial class FixSeedDataStaticDates : Migration
+    {
+        /// <inheritdoc />
+        protected override void Up(MigrationBuilder migrationBuilder)
+        {
+            migrationBuilder.UpdateData(
+                table: "Notifications",
+                keyColumn: "NotificationId",
+                keyValue: 1,
+                column: "CreatedDate",
+                value: new DateTime(2025, 8, 8, 9, 20, 23, 115, DateTimeKind.Utc).AddTicks(1691));
+
+            migrationBuilder.UpdateData(
+                table: "Notifications",
+                keyColumn: "NotificationId",
+                keyValue: 2,
+                column: "CreatedDate",
+                value: new DateTime(2025, 8, 8, 9, 20, 23, 115, DateTimeKind.Utc).AddTicks(2574));
+        }
+
+        /// <inheritdoc />
+        protected override void Down(MigrationBuilder migrationBuilder)
+        {
+            migrationBuilder.UpdateData(
+                table: "Notifications",
+                keyColumn: "NotificationId",
+                keyValue: 1,
+                column: "CreatedDate",
+                value: new DateTime(2025, 8, 8, 9, 17, 46, 707, DateTimeKind.Utc).AddTicks(1185));
+
+            migrationBuilder.UpdateData(
+                table: "Notifications",
+                keyColumn: "NotificationId",
+                keyValue: 2,
+                column: "CreatedDate",
+                value: new DateTime(2025, 8, 8, 9, 17, 46, 707, DateTimeKind.Utc).AddTicks(2052));
+        }
+    }
+}
